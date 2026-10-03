@@ -51,7 +51,7 @@ _PROVIDER_ALIASES = {
     "openai": "openai",
     "anthropic": "anthropic",
 }
-_DEFAULT_MODELS = {"google_genai": "gemini-2.5-flash"}
+_DEFAULT_MODELS = {"google_genai": "gemini-flash-latest"}
 _API_KEY_ENV = {"google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY")}
 _PACKAGE_HINT = {"google_genai": "langchain-google-genai", "openai": "langchain-openai", "anthropic": "langchain-anthropic"}
 
