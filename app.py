@@ -181,7 +181,7 @@ with tab_agent:
 
                     st.subheader("📋 Final Recommendation")
                     if result.status == "success":
-                        st.success(result.final_response)
+                        st.markdown(result.final_response)
                     else:
                         st.error(result.final_response)
 
