@@ -13,3 +13,8 @@ python-dotenv>=1.0
 
 # Tests
 pytest>=8.0
+
+# Web Interface & ML
+streamlit>=1.35.0
+scikit-learn>=1.4.0
+
