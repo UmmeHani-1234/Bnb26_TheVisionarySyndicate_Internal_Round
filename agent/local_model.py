@@ -404,13 +404,14 @@ def _score_laptop(laptop: dict[str, Any], intent: dict[str, Any]) -> float:
     """Score a laptop candidate based on user priorities and constraints."""
     score = 50.0  # base score
     name = laptop.get("name", "").lower()
-    price = laptop.get("price", 0)
-    ram = laptop.get("ram_gb", 8)
-    storage = laptop.get("storage_gb", 256)
-    gaming_score = laptop.get("gaming_suitability", 1)
-    prog_score = laptop.get("programming_suitability", 1)
+    raw_price = laptop.get("price")
+    price = float(raw_price) if raw_price is not None else 0.0
+    ram = laptop.get("ram_gb") or 8
+    storage = laptop.get("storage_gb") or 256
+    gaming_score = laptop.get("gaming_suitability") or 1
+    prog_score = laptop.get("programming_suitability") or 1
     category = laptop.get("category", "")
-    has_gpu = laptop.get("dedicated_gpu", False)
+    has_gpu = bool(laptop.get("dedicated_gpu", False))
 
     # 1. Brand match
     if intent.get("brand") and intent["brand"] in name:
@@ -634,14 +635,15 @@ class LocalChatModel(BaseChatModel):
             except Exception:
                 budget_info = {}
 
-        price = top_laptop.get("price", 0)
-        ram = top_laptop.get("ram_gb", 8)
-        storage = top_laptop.get("storage_gb", 256)
+        raw_price = top_laptop.get("price")
+        price = int(raw_price) if raw_price is not None else 0
+        ram = top_laptop.get("ram_gb") or 8
+        storage = top_laptop.get("storage_gb") or 256
         cpu = top_laptop.get("processor", "Unknown CPU")
         gpu = top_laptop.get("gpu", "Integrated Graphics")
         category = top_laptop.get("category", "General")
-        prog_stars = "★" * top_laptop.get("programming_suitability", 3)
-        game_stars = "★" * top_laptop.get("gaming_suitability", 1)
+        prog_stars = "★" * (top_laptop.get("programming_suitability") or 3)
+        game_stars = "★" * (top_laptop.get("gaming_suitability") or 1)
 
         # Injected Failure B: wrong_interpretation -> tool returned price X, agent states Y
         # Injected Failure C: budget_violation -> agent selects product that exceeds budget
@@ -655,7 +657,7 @@ class LocalChatModel(BaseChatModel):
         elif mode == "wrong_interpretation":
             price = 85000  # Tool returned 64990 or 58990, but agent states 85000
 
-        user_budget = intent["budget"] or price
+        user_budget = intent["budget"] or price or 0
         diff = user_budget - price
         savings_text = f"saving ₹{diff:,} under budget" if diff >= 0 else f"over budget by ₹{-diff:,}"
 

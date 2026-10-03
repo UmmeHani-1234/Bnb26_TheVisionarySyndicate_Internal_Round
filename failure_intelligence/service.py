@@ -195,8 +195,8 @@ class FailureIntelligenceService:
                 run_id = r.get("run_id")
                 replays = self.repo.list_replays_for_run(run_id)
                 for rep in replays:
-                    alt_id = rep.get("replay_run_id")
-                    if alt_id:
+                    alt_id = rep.get("replay_run_id") or rep.get("run_id")
+                    if alt_id and alt_id != run_id:
                         try:
                             comp = self.compare_traces(original_run_id=run_id, alternative_run_id=alt_id)
                             comparisons.append(comp)
