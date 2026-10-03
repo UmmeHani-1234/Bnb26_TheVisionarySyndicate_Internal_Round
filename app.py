@@ -250,10 +250,11 @@ def clean_html(html_str: str) -> str:
     return "\n".join(lines)
 
 # --------------------------------------------------------------------------- Database & Services
+from storage.database import get_database_url
 init_db()
 repo = TraceRepository()
 fi_service = FailureIntelligenceService(repository=repo)
-DATA_PATH = Path("data/products.json")
+DATA_PATH = Path(__file__).resolve().parent / "data" / "products.json"
 
 STAGE_NAMES = {
     1: "Request Understanding",
@@ -396,7 +397,10 @@ with st.sidebar:
     st.divider()
 
     # Telemetry Footer
-    st.markdown("""
+    raw_api_url = os.getenv("BACKEND_URL") or f":{os.getenv('API_PORT', '8000')}"
+    db_type_label = "PostgreSQL" if "postgresql" in get_database_url() else "SQLite / TraceRepo"
+
+    st.markdown(clean_html(f"""
     <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.6;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>System Status:</span>
@@ -404,7 +408,7 @@ with st.sidebar:
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>Backend API:</span>
-            <span style="color: #38bdf8; font-family: monospace;">:8000</span>
+            <span style="color: #38bdf8; font-family: monospace;">{raw_api_url}</span>
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>Active Agent:</span>
@@ -412,10 +416,10 @@ with st.sidebar:
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <span>Storage:</span>
-            <span style="color: #94a3b8; font-family: monospace;">SQLite / TraceRepo</span>
+            <span style="color: #94a3b8; font-family: monospace;">{db_type_label}</span>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """), unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- Header Banner
