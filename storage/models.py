@@ -24,6 +24,9 @@ class Run(Base):
     user_request = Column(Text, nullable=False)
     final_output = Column(Text, nullable=True)
     failure_metadata = Column(JSON, nullable=True)
+    # Stage 5: replay lineage
+    parent_run_id = Column(String(64), nullable=True, index=True)   # original run that was replayed
+    replay_metadata = Column(JSON, nullable=True)                    # {"checkpoint_id", "replay_type", "override"}
 
     steps = relationship(
         "ExecutionStep",
@@ -41,6 +44,8 @@ class Run(Base):
             "user_request": self.user_request,
             "final_output": self.final_output,
             "failure_metadata": self.failure_metadata,
+            "parent_run_id": self.parent_run_id,
+            "replay_metadata": self.replay_metadata,
         }
         if include_steps:
             data["steps"] = [step.to_dict() for step in self.steps]

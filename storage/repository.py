@@ -4,16 +4,16 @@ import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from .models import Run, ExecutionStep, utc_now_iso
+from .checkpoint_models import Checkpoint
 from .database import SessionLocal, init_db
 
 logger = logging.getLogger(__name__)
 
 
 class TraceRepository:
-    """Manages CRUD operations for Runs and ExecutionSteps."""
+    """Manages CRUD operations for Runs, ExecutionSteps, and Checkpoints."""
 
     def __init__(self, db: Optional[Session] = None) -> None:
         init_db()
@@ -29,18 +29,23 @@ class TraceRepository:
         started_at: Optional[str] = None,
         status: str = "running",
         failure_metadata: Optional[Dict[str, Any]] = None,
+        parent_run_id: Optional[str] = None,
+        replay_metadata: Optional[Dict[str, Any]] = None,
     ) -> Run:
         """Creates a new Run record in storage."""
         session = self._get_session()
         close_on_finish = self._db is None
         try:
-            # Check if run already exists
             existing = session.get(Run, run_id)
             if existing:
                 existing.user_request = user_request
                 existing.status = status
                 if failure_metadata is not None:
                     existing.failure_metadata = failure_metadata
+                if parent_run_id is not None:
+                    existing.parent_run_id = parent_run_id
+                if replay_metadata is not None:
+                    existing.replay_metadata = replay_metadata
                 session.commit()
                 session.refresh(existing)
                 return existing
@@ -51,6 +56,8 @@ class TraceRepository:
                 started_at=started_at or utc_now_iso(),
                 status=status,
                 failure_metadata=failure_metadata,
+                parent_run_id=parent_run_id,
+                replay_metadata=replay_metadata,
             )
             session.add(run)
             session.commit()
@@ -73,7 +80,6 @@ class TraceRepository:
             if not run:
                 raise ValueError(f"Run '{run_id}' not found.")
 
-            # Calculate step_id to strictly preserve ordering
             step_id = event_dict.get("step_id")
             if step_id is None:
                 step_id = event_dict.get("sequence")
@@ -81,7 +87,6 @@ class TraceRepository:
                 current_count = len(run.steps)
                 step_id = current_count + 1
 
-            # Latency in seconds (duration_ms / 1000)
             latency = None
             metadata = event_dict.get("metadata") or {}
             if "duration_ms" in metadata and metadata["duration_ms"] is not None:
@@ -184,6 +189,70 @@ class TraceRepository:
         try:
             runs = session.query(Run).order_by(Run.started_at.desc()).offset(offset).limit(limit).all()
             return [r.to_dict(include_steps=False) for r in runs]
+        finally:
+            if close_on_finish:
+                session.close()
+
+    # ------------------------------------------------------------------ Checkpoint CRUD
+
+    def save_checkpoint(self, checkpoint: Checkpoint) -> Checkpoint:
+        """Persists a Checkpoint record to storage."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            existing = session.get(Checkpoint, checkpoint.checkpoint_id)
+            if existing:
+                existing.state = checkpoint.state
+                existing.checkpoint_type = checkpoint.checkpoint_type
+                session.commit()
+                session.refresh(existing)
+                return existing
+            session.add(checkpoint)
+            session.commit()
+            session.refresh(checkpoint)
+            return checkpoint
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def get_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:
+        """Retrieves a checkpoint by its ID."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            return session.get(Checkpoint, checkpoint_id)
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def list_checkpoints_for_run(self, run_id: str) -> List[Dict[str, Any]]:
+        """Returns all checkpoints belonging to a run, ordered by step_id."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            cps = (
+                session.query(Checkpoint)
+                .filter(Checkpoint.run_id == run_id)
+                .order_by(Checkpoint.step_id)
+                .all()
+            )
+            return [cp.to_dict() for cp in cps]
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def list_replays_for_run(self, run_id: str) -> List[Dict[str, Any]]:
+        """Returns all replay runs created from the given original run_id."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            replays = (
+                session.query(Run)
+                .filter(Run.parent_run_id == run_id)
+                .order_by(Run.started_at.desc())
+                .all()
+            )
+            return [r.to_dict(include_steps=False) for r in replays]
         finally:
             if close_on_finish:
                 session.close()

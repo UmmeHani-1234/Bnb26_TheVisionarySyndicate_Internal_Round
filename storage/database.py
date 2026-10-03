@@ -50,16 +50,28 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_db() -> None:
-    """Creates database tables if they do not exist."""
+    """Creates database tables if they do not exist and migrates new columns."""
+    # Import checkpoint model to register it with Base.metadata before create_all
+    from storage.checkpoint_models import Checkpoint  # noqa: F401 – side-effect import
+
     Base.metadata.create_all(bind=engine)
-    try:
-        with engine.connect() as conn:
-            from sqlalchemy import text
-            conn.execute(text("ALTER TABLE runs ADD COLUMN failure_metadata JSON"))
-            conn.commit()
-    except Exception:
-        # Column already exists or table freshly created
-        pass
+
+    _migrate_columns = [
+        ("runs", "failure_metadata", "JSON"),
+        ("runs", "parent_run_id", "VARCHAR(64)"),
+        ("runs", "replay_metadata", "JSON"),
+    ]
+
+    with engine.connect() as conn:
+        from sqlalchemy import text
+        for table, col, col_type in _migrate_columns:
+            try:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                # Column already exists or table freshly created — silently continue
+                pass
+
 
 
 def get_db() -> Generator[Session, None, None]:
