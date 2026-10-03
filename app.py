@@ -22,6 +22,7 @@ from sklearn.preprocessing import StandardScaler
 
 from agent.agent import ConfigError, LaptopAgent
 from agent.events import EventType
+from recorder.recorder import ExecutionRecorder
 
 load_dotenv(override=True)
 
@@ -165,7 +166,8 @@ with tab_agent:
         else:
             with st.spinner("Agent is reasoning and executing tools..."):
                 try:
-                    agent = LaptopAgent()
+                    recorder = ExecutionRecorder()
+                    agent = LaptopAgent(sinks=[recorder.record])
                     result = agent.run(user_query)
 
                     st.subheader("📋 Final Recommendation")

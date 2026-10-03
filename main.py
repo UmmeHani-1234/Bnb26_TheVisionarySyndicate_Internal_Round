@@ -28,8 +28,11 @@ def main(argv=None) -> int:
     parser.add_argument("--save-events", metavar="PATH", help="Write the raw event list to a JSON file.")
     args = parser.parse_args(argv)
 
+    from recorder.recorder import ExecutionRecorder
+
     try:
-        agent = LaptopAgent()
+        recorder = ExecutionRecorder()
+        agent = LaptopAgent(sinks=[recorder.record])
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 2
