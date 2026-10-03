@@ -85,7 +85,8 @@ def build_llm(
 
     Nothing outside this function needs to change to switch provider or model.
     """
-    load_dotenv()  # does not override variables already set in the environment
+    load_dotenv(override=True)
+
 
     raw_provider = (provider or os.getenv("LLM_PROVIDER") or "google").strip().lower()
     lc_provider = _PROVIDER_ALIASES.get(raw_provider, raw_provider)

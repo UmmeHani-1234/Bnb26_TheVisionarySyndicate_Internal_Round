@@ -23,7 +23,7 @@ from sklearn.preprocessing import StandardScaler
 from agent.agent import ConfigError, LaptopAgent
 from agent.events import EventType
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 # Page configuration
@@ -131,6 +131,12 @@ nn_model, scaler, _ = build_ml_recommender(products)
 
 # Sidebar
 with st.sidebar:
+    st.subheader("🤖 Active LLM Engine")
+    provider_val = os.getenv("LLM_PROVIDER", "huggingface")
+    model_val = os.getenv("LLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+    st.success(f"**Provider:** `{provider_val}`\n\n**Model:** `{model_val}`")
+
+    st.divider()
     st.subheader("💡 Quick Example Queries")
     presets = [
         "Find a laptop under ₹70,000 suitable for programming and gaming.",
@@ -141,7 +147,7 @@ with st.sidebar:
     selected_preset = st.radio("Choose a template prompt:", presets, index=0)
 
     st.divider()
-    st.caption("Black Box Phase 1 | Observability & ML Analysis")
+    st.caption("Black Box | Observability & ML Studio")
 
 # Main tabs
 tab_agent, tab_ml, tab_catalog = st.tabs(["🤖 Agent Execution", "🧠 Scikit-Learn ML Recommender", "📦 Laptop Catalogue"])
