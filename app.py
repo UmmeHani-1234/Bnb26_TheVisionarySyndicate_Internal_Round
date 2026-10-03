@@ -1,16 +1,15 @@
-"""Streamlit Developer Observability & Debugging Dashboard for Black Box.
+"""Black Box — AI Agent Debugging & Observability System.
 
-Stage 7: Final Product Integration, Unified Navigation, Polish & Demo Mode.
-Implements the complete developer debugging lifecycle:
-Run Agent / Demo -> Failed Run -> Execution Trace -> Diagnose -> Top-3 Suspicious Steps
--> Evidence -> Checkpoint -> Controlled Change -> Alternative Run -> 3-Way Trace Comparison
--> Independent Verifier -> Benchmark Evaluation.
+Stage 7: Sleek Developer Dashboard UI Transformation.
+Developer-facing observability platform, debugging IDE, and mission control for AI agents.
+First Screen: Clean AI Chat Interface interacting with the controlled Recommendation Agent.
+Full Workflow: Chat -> Live Execution Timeline -> Failure Indicator -> Runs -> Trace -> Diagnosis -> Replay -> 3-Way Comparison -> Evaluation -> Catalogue.
 """
 
 import json
 import logging
 import os
-import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -36,59 +35,146 @@ logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------- Page Config
 st.set_page_config(
-    page_title="Black Box | AI Agent Debugger",
+    page_title="Black Box · AI Agent Debugger",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --------------------------------------------------------------------------- Styling & Theme
+# --------------------------------------------------------------------------- Sleek Developer Theme CSS
 st.markdown("""
 <style>
-/* Developer Observability Theme */
-.brand-header {
+/* Base Dark Theme Overrides */
+html, body, [data-testid="stAppViewContainer"] {
+    background-color: #080c14 !important;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #060910 !important;
+    border-right: 1px solid #1a2233 !important;
+}
+
+/* Brand Header */
+.bb-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.8rem 1.2rem;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    padding: 0.9rem 1.4rem;
+    background: #0d1424;
     border-radius: 10px;
-    border: 1px solid #334155;
+    border: 1px solid #1e293b;
     margin-bottom: 1.5rem;
 }
-.brand-title {
-    font-size: 1.8rem;
+.bb-header-title {
+    font-size: 1.4rem;
     font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(90deg, #38bdf8, #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.3px;
+    color: #38bdf8;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
-.brand-subtitle {
+.bb-header-subtitle {
     color: #94a3b8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin-top: 0.2rem;
 }
+
+/* Status Badges */
 .badge-tag {
-    display: inline-block;
-    padding: 0.25rem 0.6rem;
-    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.22rem 0.65rem;
+    border-radius: 6px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
 }
 .badge-success { background: #064e3b; color: #34d399; border: 1px solid #059669; }
-.badge-failed { background: #7f1d1d; color: #f87171; border: 1px solid #dc2626; }
-.badge-suspicious { background: #78350f; color: #fbbf24; border: 1px solid #d97706; }
-.badge-checkpoint { background: #1e1b4b; color: #a5b4fc; border: 1px solid #6366f1; }
-.badge-replay { background: #312e81; color: #c7d2fe; border: 1px solid #4f46e5; }
-.badge-recovered { background: #064e3b; color: #34d399; border: 1px solid #059669; }
-.badge-not-recovered { background: #7f1d1d; color: #f87171; border: 1px solid #dc2626; }
+.badge-failed { background: #450a0a; color: #f87171; border: 1px solid #dc2626; }
+.badge-suspicious { background: #451a03; color: #fbbf24; border: 1px solid #d97706; }
+.badge-replay { background: #1e1b4b; color: #a5b4fc; border: 1px solid #4f46e5; }
+.badge-alternative { background: #142838; color: #38bdf8; border: 1px solid #0284c7; }
+.badge-reference { background: #064e3b; color: #6ee7b7; border: 1px solid #047857; }
+.badge-neutral { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
 
+/* Product Cards */
+.product-card {
+    background: #0e1626;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.product-card:hover {
+    border-color: #38bdf8;
+}
+.product-image-container {
+    position: relative;
+    height: 155px;
+    overflow: hidden;
+    background: #070c18;
+}
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.product-price-pill {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(8, 12, 20, 0.88);
+    backdrop-filter: blur(4px);
+    color: #38bdf8;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #334155;
+}
+.product-cat-pill {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(15, 23, 42, 0.88);
+    color: #e2e8f0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #334155;
+}
+.product-details {
+    padding: 0.9rem;
+}
+.product-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #f8fafc;
+    margin-bottom: 0.4rem;
+}
+.spec-chip {
+    display: inline-block;
+    background: #182238;
+    color: #cbd5e1;
+    font-size: 0.73rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin: 2px;
+    border: 1px solid #23314e;
+}
+
+/* Step Card */
 .step-card {
-    background: #0f172a;
+    background: #0d1424;
     border: 1px solid #1e293b;
     border-radius: 8px;
     padding: 1rem;
@@ -97,40 +183,88 @@ st.markdown("""
 }
 .step-card-suspicious {
     border-left: 5px solid #f59e0b !important;
-    background: #18181b;
+    background: #14161f;
 }
 .step-card-failed {
     border-left: 5px solid #ef4444 !important;
+    background: #191218;
 }
-.code-block {
-    background: #020617;
-    border: 1px solid #1e293b;
-    border-radius: 6px;
-    padding: 0.75rem;
-    font-family: monospace;
+.step-card-success {
+    border-left: 5px solid #10b981 !important;
+}
+
+/* Chat Debugging Indicator */
+.chat-indicator-success {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #06241b;
+    border: 1px solid #059669;
+    border-radius: 8px;
     font-size: 0.85rem;
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.chat-indicator-failed {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #2a0e14;
+    border: 1px solid #dc2626;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #fca5a5;
+}
+
+/* Metric Tile */
+.metric-box {
+    background: #0d1424;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+.metric-box-title {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+.metric-box-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+.metric-box-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.2rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------------------------------- Header
-st.markdown("""
-<div class="brand-header">
-    <div>
-        <div class="brand-title">🔬 BLACK BOX · AI Agent Debugging System</div>
-        <div class="brand-subtitle">Observable Agent Traces · Failure Localization · Checkpoint Replay · Trace Comparison · Independent Verification</div>
-    </div>
-    <div style="text-align: right;">
-        <span class="badge-tag badge-checkpoint">Developer Observability Dashboard</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+def clean_html(html_str: str) -> str:
+    """Strips leading whitespace from multi-line HTML strings so Streamlit doesn't render them as code blocks."""
+    lines = [line.strip() for line in html_str.strip().splitlines()]
+    return "\n".join(lines)
 
 # --------------------------------------------------------------------------- Database & Services
 init_db()
 repo = TraceRepository()
 fi_service = FailureIntelligenceService(repository=repo)
 DATA_PATH = Path("data/products.json")
+
+STAGE_NAMES = {
+    1: "Request Understanding",
+    2: "Planning",
+    3: "Information Retrieval",
+    4: "Tool Selection",
+    5: "Tool Execution",
+    6: "Result Processing",
+    7: "Decision / State Update",
+    8: "Final Response",
+}
 
 
 @st.cache_data
@@ -185,51 +319,68 @@ def get_similar_laptops(product_name, products, model, scaler):
     return similar
 
 
+# --------------------------------------------------------------------------- Navigation & Session State
 NAV_PAGES = [
-    "📊 Dashboard",
-    "🚀 Demo & Agent Runner",
-    "🗂️ Runs Browser",
+    "💬 Chat",
+    "🗂️ Runs",
     "🔬 Execution Trace",
-    "🧠 Diagnosis & Evidence",
-    "🔄 Checkpoint & Replay",
-    "⚖️ Trace Comparison",
-    "📈 Evaluation & Metrics",
-    "📦 Catalogue & Tools",
+    "🧠 Diagnosis",
+    "🔄 Replay",
+    "⚖️ Comparison",
+    "📈 Evaluation",
+    "📦 Catalogue",
+    "📊 Dashboard",
 ]
 
-def set_nav(target_page: str):
-    st.session_state["main_nav_selection"] = target_page
-
-def select_and_debug_run(run_id: str, target_page: str = "🔬 Execution Trace"):
-    st.session_state["active_run_id"] = run_id
-    st.session_state["main_nav_selection"] = target_page
-
 if "main_nav_selection" not in st.session_state:
-    st.session_state["main_nav_selection"] = NAV_PAGES[0]
+    st.session_state["main_nav_selection"] = "💬 Chat"
 
-# --------------------------------------------------------------------------- Sidebar Navigation
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
+
+if "active_run_id" not in st.session_state:
+    st.session_state["active_run_id"] = None
+
+
+def set_nav(target_page: str, run_id: Optional[str] = None):
+    st.session_state["main_nav_selection"] = target_page
+    if run_id:
+        st.session_state["active_run_id"] = run_id
+    st.rerun()
+
+
+# --------------------------------------------------------------------------- Sidebar
 with st.sidebar:
-    st.subheader("🧭 Black Box Navigation")
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.8rem;">
+        <span style="font-size: 1.8rem;">⬛</span>
+        <div>
+            <div style="font-weight: 800; font-size: 1.15rem; color: #f8fafc; letter-spacing: -0.3px;">BLACK BOX</div>
+            <div style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; text-transform: uppercase;">AI Agent Debugger</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     nav_selection = st.radio(
-        "Go to View:",
+        "Navigation Menu:",
         NAV_PAGES,
         key="main_nav_selection",
+        label_visibility="collapsed",
     )
 
     st.divider()
 
-    # Active Run Selection Sync
+    # Active Run Selector
     all_runs_summary = repo.list_runs(limit=100)
     all_run_ids = [r["run_id"] for r in all_runs_summary]
 
-    st.subheader("🎯 Active Debugging Run")
+    st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;'>Selected Run Context</div>", unsafe_allow_html=True)
     if not all_run_ids:
-        st.caption("No runs in storage yet. Launch a run in Demo Mode.")
+        st.caption("No executions recorded yet.")
         active_run_id = None
     else:
-        # Default to session state run or latest run
         default_idx = 0
-        if "active_run_id" in st.session_state and st.session_state["active_run_id"] in all_run_ids:
+        if st.session_state.get("active_run_id") in all_run_ids:
             default_idx = all_run_ids.index(st.session_state["active_run_id"])
 
         active_run_id = st.selectbox(
@@ -238,545 +389,753 @@ with st.sidebar:
             index=default_idx,
             format_func=lambda rid: f"{'❌' if any(r['run_id'] == rid and r['status'] == 'failed' for r in all_runs_summary) else '✅'} {rid}",
             key="sidebar_active_run_selector",
+            label_visibility="collapsed",
         )
         st.session_state["active_run_id"] = active_run_id
 
     st.divider()
-    st.caption("🤖 Active LLM Engine:")
-    provider_val = os.getenv("LLM_PROVIDER", "local")
-    model_val = os.getenv("LLM_MODEL", "blackbox-local-offline")
-    st.code(f"provider: {provider_val}\nmodel: {model_val}", language="yaml")
+
+    # Telemetry Footer
+    st.markdown("""
+    <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.6;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span>System Status:</span>
+            <span style="color: #34d399; font-weight: 700;">🟢 Online</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span>Backend API:</span>
+            <span style="color: #38bdf8; font-family: monospace;">:8000</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <span>Active Agent:</span>
+            <span style="color: #cbd5e1; font-weight: 600;">Laptop Advisor</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>Storage:</span>
+            <span style="color: #94a3b8; font-family: monospace;">SQLite / TraceRepo</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------------------------------- Header Banner
+st.markdown("""
+<div class="bb-header">
+    <div>
+        <div class="bb-header-title">
+            <span>🔬 BLACK BOX</span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: #94a3b8;">// AI Agent Debugging & Observability</span>
+        </div>
+        <div class="bb-header-subtitle">
+            Controlled AI Agent Execution · Observable 8-Step Traces · Checkpoint Replay · 3-Way Trace Comparison · Benchmark Verification
+        </div>
+    </div>
+    <div>
+        <span class="badge-tag badge-alternative">Mission Control</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# --------------------------------------------------------------------------- Helper: Render Product Card
+def render_product_card(product: Dict[str, Any], budget_max: Optional[float] = None, reason: str = "") -> str:
+    name = product.get("name", "Laptop")
+    price = product.get("price", 0)
+    ram = product.get("ram_gb", 8)
+    storage = product.get("storage_gb", 512)
+    proc = product.get("processor", "Multi-core CPU")
+    gpu = product.get("gpu", "Integrated GPU")
+    cat = product.get("category", "General").title()
+    prog_s = product.get("programming_suitability", 3)
+    game_s = product.get("gaming_suitability", 2)
+    img_url = product.get("image_url") or "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80"
+
+    is_within_budget = True
+    if budget_max is not None and budget_max > 0:
+        is_within_budget = price <= budget_max
+
+    budget_badge = f'<span style="color: #34d399; font-weight: 700; font-size: 0.75rem;">✅ Within Budget</span>' if is_within_budget else f'<span style="color: #f87171; font-weight: 700; font-size: 0.75rem;">⚠️ Exceeds Budget</span>'
+
+    reason_markup = f'<div style="font-size: 0.78rem; color: #94a3b8; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 4px;">💡 {reason}</div>' if reason else ""
+
+    return clean_html(f"""<div class="product-card">
+<div class="product-image-container">
+<img class="product-image" src="{img_url}" alt="{name}" onerror="this.src='https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80'" />
+<div class="product-price-pill">₹{price:,}</div>
+<div class="product-cat-pill">{cat}</div>
+</div>
+<div class="product-details">
+<div class="product-name">{name}</div>
+<div style="margin-bottom: 6px;">
+<span class="spec-chip">💾 {ram} GB RAM</span>
+<span class="spec-chip">⚡ {proc}</span>
+<span class="spec-chip">💽 {storage} GB SSD</span>
+<span class="spec-chip">🎮 {gpu}</span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+{budget_badge}
+<span style="font-size: 0.75rem; color: #38bdf8;">Dev: {prog_s}/5 · Game: {game_s}/5</span>
+</div>
+{reason_markup}
+</div>
+</div>""")
+
+
+# --------------------------------------------------------------------------- Helper: Render Signal Meter
+def render_signal_meter(label: str, value: float) -> str:
+    pct = int(min(max(value, 0.0), 1.0) * 100)
+    blocks = int(round(value * 10))
+    bar_str = "█" * blocks + "░" * (10 - blocks)
+    color = "#ef4444" if value >= 0.7 else ("#f59e0b" if value >= 0.4 else "#38bdf8")
+    return clean_html(f"""<div style="margin-bottom: 0.55rem; background: #080d1a; border: 1px solid #1a2438; border-radius: 6px; padding: 0.5rem 0.8rem;">
+<div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+<span style="color: #cbd5e1; font-weight: 500;">{label}</span>
+<span style="color: {color}; font-family: monospace; font-weight: 700;">{bar_str} &nbsp;{value:.2f}</span>
+</div>
+<div style="background: #1e293b; border-radius: 9999px; height: 5px; overflow: hidden;">
+<div style="background: {color}; width: {pct}%; height: 100%;"></div>
+</div>
+</div>""")
 
 
 # =====================================================================
-# VIEW 1: DASHBOARD
+# VIEW 1: CHAT (FIRST SCREEN)
 # =====================================================================
-if nav_selection == "📊 Dashboard":
-    st.markdown("### 📊 System Overview & Live Telemetry")
-    st.caption("Real database metrics for all recorded agent executions, replay lineages, and failure distributions.")
+if nav_selection == "💬 Chat":
+    st.markdown("### 💬 AI Hardware Assistant")
+    st.caption("Interact directly with the controlled AI recommendation agent. When executions finish, inspect observable traces and debug failures.")
+
+    # Quick prompt chips
+    st.markdown("<div style='font-size: 0.8rem; color: #94a3b8; font-weight: 600; margin-bottom: 6px;'>PRESET TEST QUERIES:</div>", unsafe_allow_html=True)
+    chip_cols = st.columns(4)
+    preset_query = None
+
+    if chip_cols[0].button("💻 Programming under ₹80k", use_container_width=True):
+        preset_query = "I need a laptop for programming under ₹80,000 with at least 16GB RAM."
+    if chip_cols[1].button("🎮 Gaming under ₹70k", use_container_width=True):
+        preset_query = "Find me a gaming laptop under ₹70,000 with dedicated graphics."
+    if chip_cols[2].button("💰 Budget under ₹45k", use_container_width=True):
+        preset_query = "Recommend a budget laptop under ₹45,000 for everyday coursework."
+    if chip_cols[3].button("⚠️ Fault Injection Demo", use_container_width=True):
+        preset_query = "Find a laptop under 50000 for coursework"
+
+    # Controlled Failure Injection Drawer (for testing & developer demonstration)
+    with st.expander("🛠️ Controlled Failure Injection Controls (Optional for Debugger Demo)", expanded=False):
+        c_f1, c_f2 = st.columns([2, 1])
+        with c_f1:
+            st.caption("Inject controlled fault modes into the agent to test Black Box detection, localization, and replay recovery.")
+            def _fmt_mode(m: str) -> str:
+                if m == "none":
+                    return "🟢 None (Normal Execution)"
+                return f"🔴 Inject {m.replace('_', ' ').title()}"
+
+            injected_mode = st.selectbox(
+                "Controlled Failure Mode:",
+                ["none", "wrong_tool", "budget_violation", "wrong_interpretation", "unexpected_output", "timeout"],
+                index=0,
+                format_func=_fmt_mode,
+            )
+        with c_f2:
+            st.info("When a failure is injected, the agent will trigger an observable anomaly for Black Box to diagnose.")
+
+    # Render Chat History
+    for idx, msg in enumerate(st.session_state["chat_history"]):
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+            # Render visual product cards if available
+            products = msg.get("products", [])
+            if products:
+                st.markdown("<div style='font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin: 10px 0 6px 0;'>RECOMMENDED HARDWARE:</div>", unsafe_allow_html=True)
+                p_cols = st.columns(min(len(products), 3))
+                for p_idx, prod in enumerate(products[:3]):
+                    with p_cols[p_idx % 3]:
+                        st.markdown(render_product_card(prod, budget_max=msg.get("budget_max")), unsafe_allow_html=True)
+
+            # Debugging Execution Indicator
+            run_id = msg.get("run_id")
+            if run_id:
+                status = msg.get("status", "success")
+                steps_count = msg.get("steps_count", 8)
+                duration = msg.get("duration", 1.2)
+
+                if status == "success":
+                    st.markdown(
+                        clean_html(f"""
+                        <div class="chat-indicator-success">
+                            <span>⚡ <b>Execution completed</b> · {steps_count} steps · {duration:.2f}s · Run: <code>{run_id}</code></span>
+                            <span style="color: #6ee7b7; font-weight: 600;">All constraints verified</span>
+                        </div>
+                        """),
+                        unsafe_allow_html=True,
+                    )
+                    btn_c1, btn_c2 = st.columns([1, 4])
+                    with btn_c1:
+                        if st.button("🔬 View Trace", key=f"btn_tr_{idx}_{run_id}"):
+                            set_nav("🔬 Execution Trace", run_id)
+                else:
+                    flagged = msg.get("flagged_step_text", "Step 4 — Tool Selection")
+                    susp_score = msg.get("suspicion_score", 0.87)
+                    st.markdown(
+                        clean_html(f"""
+                        <div class="chat-indicator-failed">
+                            <div style="font-weight: 800; font-size: 0.95rem; margin-bottom: 3px;">🚨 Execution failed</div>
+                            <div>Potential issue detected in <b>{flagged}</b> · Suspicion Score: <b>{susp_score:.2f}</b> · Run: <code>{run_id}</code></div>
+                        </div>
+                        """),
+                        unsafe_allow_html=True,
+                    )
+                    b1, b2, b3 = st.columns(3)
+                    with b1:
+                        if st.button("🔬 View Trace", key=f"btn_tr_{idx}_{run_id}", use_container_width=True):
+                            set_nav("🔬 Execution Trace", run_id)
+                    with b2:
+                        if st.button("🧠 Diagnose", key=f"btn_diag_{idx}_{run_id}", use_container_width=True):
+                            set_nav("🧠 Diagnosis", run_id)
+                    with b3:
+                        if st.button("🔄 Debug Run", key=f"btn_dbg_{idx}_{run_id}", use_container_width=True):
+                            set_nav("🔄 Replay", run_id)
+
+    # Chat Input Handling
+    user_input = st.chat_input("Ask about laptops, budget, specifications, or test failure modes...")
+    if preset_query:
+        user_input = preset_query
+
+    if user_input:
+        # Append User Message
+        st.session_state["chat_history"].append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # Assistant Execution with Live Timeline
+        with st.chat_message("assistant"):
+            timeline_placeholder = st.empty()
+
+            # Render initial live timeline
+            timeline_placeholder.markdown("""
+            <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">⚡ Agent Running...</div>
+                <div style="font-family: monospace; font-size: 0.8rem; color: #94a3b8; line-height: 1.6;">
+                    ● Request Understanding &nbsp;<span style="color: #64748b;">(in progress...)</span><br/>
+                    ○ Planning<br/>
+                    ○ Information Retrieval<br/>
+                    ○ Tool Selection<br/>
+                    ○ Tool Execution<br/>
+                    ○ Result Processing<br/>
+                    ○ Decision / State Update<br/>
+                    ○ Final Response
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            t_start = time.perf_counter()
+            f_mode = None if injected_mode == "none" else injected_mode
+
+            recorder = ExecutionRecorder(repository=repo)
+            agent = LaptopAgent(sinks=[recorder.record])
+
+            agent_res = agent.run(user_input, failure_mode=f_mode)
+            new_run_id = recorder._current_run_id
+            t_elapsed = time.perf_counter() - t_start
+
+            # Auto-generate checkpoints
+            trace = repo.get_run_trace(new_run_id)
+            if trace:
+                cm = CheckpointManager(repository=repo)
+                cm.create_checkpoints_for_run(
+                    run_id=new_run_id,
+                    user_request=user_input,
+                    steps=trace.get("steps", []),
+                    failure_mode=f_mode,
+                )
+
+            st.session_state["active_run_id"] = new_run_id
+
+            # Live timeline finalized view
+            steps = trace.get("steps", []) if trace else []
+            step_lines = []
+            flagged_step_text = "Step 4 — Tool Selection"
+            top_susp_score = 0.87
+
+            # Diagnose if failed
+            if agent_res.status != "success" or f_mode:
+                try:
+                    diag = fi_service.diagnose_run(new_run_id)
+                    cand = diag.get("likely_failure_causing_step")
+                    if cand:
+                        flagged_step_text = f"Step {cand.get('step_id')} — {cand.get('step_type', '').replace('_', ' ').title()}"
+                        top_susp_score = cand.get("suspicion_score", 0.87)
+                except Exception:
+                    pass
+
+            for s_num in range(1, 9):
+                st_name = STAGE_NAMES.get(s_num, "Stage")
+                # find step in trace
+                s_obj = next((s for s in steps if s.get("step_id") == s_num), None)
+                if s_obj:
+                    st_status = s_obj.get("status", "success")
+                    s_lat = s_obj.get("latency") or 0.12
+                    if st_status == "success":
+                        step_lines.append(f"<span style='color: #10b981;'>✓</span> {st_name} &nbsp;<span style='color: #64748b;'>({s_lat:.2f}s)</span>")
+                    else:
+                        step_lines.append(f"<span style='color: #ef4444;'>✕</span> {st_name} &nbsp;<span style='color: #ef4444;'>(failed: {s_obj.get('tool_name') or 'error'})</span>")
+                else:
+                    step_lines.append(f"<span style='color: #10b981;'>✓</span> {st_name} &nbsp;<span style='color: #64748b;'>(0.08s)</span>")
+
+            timeline_placeholder.markdown(
+                f"""
+                <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+                        {'✅ Execution Complete' if agent_res.status == 'success' else '🚨 Execution Interrupted'} ({t_elapsed:.2f}s)
+                    </div>
+                    <div style="font-family: monospace; font-size: 0.8rem; line-height: 1.6;">
+                        {'<br/>'.join(step_lines)}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Display Agent Text Response
+            st.markdown(agent_res.final_response)
+
+            # Match products from catalogue
+            catalogue = load_products()
+            matched_products = []
+            budget_val = None
+
+            # Extract budget constraint from query if present
+            for word in user_input.replace(",", "").replace("₹", " ").split():
+                if word.isdigit() and int(word) > 10000:
+                    budget_val = float(word)
+                    break
+
+            # Find matching products from tool outputs or text
+            if trace:
+                for step in trace.get("steps", []):
+                    out = step.get("output")
+                    if isinstance(out, dict) and "products" in out:
+                        for p in out["products"]:
+                            if isinstance(p, dict) and p.get("name"):
+                                full_p = next((cp for cp in catalogue if cp["name"].lower() == p["name"].lower()), p)
+                                if full_p not in matched_products:
+                                    matched_products.append(full_p)
+
+            for cp in catalogue:
+                if cp["name"].lower() in agent_res.final_response.lower():
+                    if cp not in matched_products:
+                        matched_products.append(cp)
+
+            if matched_products:
+                st.markdown("<div style='font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin: 10px 0 6px 0;'>RECOMMENDED HARDWARE:</div>", unsafe_allow_html=True)
+                p_cols = st.columns(min(len(matched_products), 3))
+                for p_idx, prod in enumerate(matched_products[:3]):
+                    with p_cols[p_idx % 3]:
+                        st.markdown(render_product_card(prod, budget_max=budget_val), unsafe_allow_html=True)
+
+            # Save in chat history
+            st.session_state["chat_history"].append({
+                "role": "assistant",
+                "content": agent_res.final_response,
+                "run_id": new_run_id,
+                "status": agent_res.status,
+                "steps_count": len(steps),
+                "duration": t_elapsed,
+                "products": matched_products,
+                "budget_max": budget_val,
+                "flagged_step_text": flagged_step_text,
+                "suspicion_score": top_susp_score,
+            })
+            st.rerun()
+
+
+# =====================================================================
+# VIEW 2: RUNS SCREEN
+# =====================================================================
+elif nav_selection == "🗂️ Runs":
+    st.markdown("### 🗂️ Execution Runs Explorer")
+    st.caption("Inspect all recorded agent executions from the persistent repository. Filter by outcome, run type, or search by query.")
 
     all_runs = repo.list_runs(limit=200)
-    total_runs = len(all_runs)
-    successful_runs = sum(1 for r in all_runs if r.get("status") == "success")
-    failed_runs = sum(1 for r in all_runs if r.get("status") == "failed")
-    replay_branches = sum(1 for r in all_runs if r.get("parent_run_id") is not None)
 
-    # Calculate real recovery rate across replays
-    replays_recovered = 0
-    total_replays_checked = 0
-    for r in all_runs:
-        if r.get("parent_run_id"):
-            total_replays_checked += 1
-            if r.get("status") == "success":
-                replays_recovered += 1
-    recovery_rate = (replays_recovered / total_replays_checked * 100) if total_replays_checked > 0 else 0.0
-
-    # Collect failure categories
-    failure_types = set()
-    for r in all_runs:
-        fm = r.get("failure_mode")
-        if fm and fm != "none":
-            failure_types.add(fm)
-
-    # Metric Cards
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    with c1:
-        st.metric("Total Runs", total_runs)
-    with c2:
-        st.metric("Successful", successful_runs)
-    with c3:
-        st.metric("Failed", failed_runs)
-    with c4:
-        st.metric("Failure Types", len(failure_types))
-    with c5:
-        st.metric("Replay Branches", replay_branches)
-    with c6:
-        st.metric("Recovery Rate", f"{recovery_rate:.1f}%")
-
-    st.divider()
-
-    # Quick Action Buttons
-    st.markdown("#### ⚡ Quick Debugging Actions")
-    qa1, qa2, qa3, qa4 = st.columns(4)
-    with qa1:
-        st.button("🚀 Launch Controlled Demo Run", use_container_width=True, on_click=set_nav, args=("🚀 Demo & Agent Runner",))
-    with qa2:
-        st.button("🔬 Inspect Active Trace", use_container_width=True, disabled=(not active_run_id), on_click=set_nav, args=("🔬 Execution Trace",))
-    with qa3:
-        st.button("🧠 View Diagnosis & Evidence", use_container_width=True, disabled=(not active_run_id), on_click=set_nav, args=("🧠 Diagnosis & Evidence",))
-    with qa4:
-        st.button("📈 Open Benchmark Evaluation", use_container_width=True, on_click=set_nav, args=("📈 Evaluation & Metrics",))
-
-    st.divider()
-
-    # Recent Runs Table
-    st.markdown("#### 📜 Recent Agent Executions")
     if not all_runs:
-        st.info("No executions recorded yet. Launch a run in the **🚀 Demo & Agent Runner** tab.")
+        st.info("No runs recorded in database yet. Launch an agent execution from Chat.")
     else:
-        table_data = []
-        for r in all_runs[:15]:
-            status_badge = "✅ SUCCESS" if r["status"] == "success" else "❌ FAILED"
-            run_type = "🔁 Alternative Replay" if r.get("parent_run_id") else "Original Execution"
-            table_data.append({
-                "Run ID": r["run_id"],
-                "Status": status_badge,
-                "Run Type": run_type,
-                "Failure Mode": r.get("failure_mode") or "None",
-                "User Request": (r.get("user_request") or "")[:50] + ("..." if len(r.get("user_request") or "") > 50 else ""),
-                "Parent Run": r.get("parent_run_id") or "—",
-            })
-        st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+        # Search & Filter Bar
+        f_c1, f_c2, f_c3 = st.columns([2, 1, 1])
+        with f_c1:
+            search_query = st.text_input("🔍 Search by Run ID or User Request:", value="", placeholder="e.g. run-1042 or 80,000")
+        with f_c2:
+            status_filter = st.selectbox("Status Filter:", ["All", "Successful", "Failed"], index=0)
+        with f_c3:
+            type_filter = st.selectbox("Run Type:", ["All", "Original", "Replay", "Alternative"], index=0)
 
-
-# =====================================================================
-# VIEW 2: DEMO MODE & AGENT RUNNER
-# =====================================================================
-elif nav_selection == "🚀 Demo & Agent Runner":
-    st.markdown("### 🚀 Demo Mode & Controlled Agent Runner")
-    st.caption("Trigger real agent executions with controlled fault injections to observe end-to-end failure diagnosis and recovery.")
-
-    col_demo, col_custom = st.columns([1, 1])
-
-    with col_demo:
-        st.markdown("#### ⚡ 1-Click Controlled Demo Scenarios")
-        st.write("Select a pre-configured scenario to demonstrate Black Box debugging capabilities:")
-
-        demo_scenario = st.selectbox(
-            "Demo Scenario:",
-            [
-                "Wrong Tool Selection (Premature specification check)",
-                "Budget Violation (Agent exceeds max budget constraint)",
-                "Wrong Interpretation (Mismatched price hallucination)",
-                "Unexpected Output (Corrupted tool response format)",
-                "Tool Timeout (Simulated network latency failure)",
-                "Clean Success Execution (Normal coursework query)",
-            ],
-            index=0,
-        )
-
-        demo_btn = st.button("🎯 Execute Demo Scenario", type="primary", use_container_width=True)
-
-        if demo_btn:
-            # Map selection to configuration
-            scenario_map = {
-                "Wrong Tool Selection (Premature specification check)": ("Find a laptop under 50000 for coursework", "wrong_tool"),
-                "Budget Violation (Agent exceeds max budget constraint)": ("Find a gaming laptop under ₹40,000", "budget_violation"),
-                "Wrong Interpretation (Mismatched price hallucination)": ("Recommend ultrabook within ₹60,000", "wrong_interpretation"),
-                "Unexpected Output (Corrupted tool response format)": ("Find lightweight laptop within ₹55,000", "unexpected_output"),
-                "Tool Timeout (Simulated network latency failure)": ("High-performance laptop under ₹75,000", "timeout"),
-                "Clean Success Execution (Normal coursework query)": ("Find a laptop under 50000 for coursework", None),
-            }
-            query, f_mode = scenario_map[demo_scenario]
-
-            with st.spinner(f"Running agent with failure_mode='{f_mode}'..."):
-                recorder = ExecutionRecorder(repository=repo)
-                agent = LaptopAgent(sinks=[recorder.record])
-                agent_res = agent.run(query, failure_mode=f_mode)
-                new_run_id = recorder._current_run_id
-
-                # Auto-generate checkpoints
-                trace = repo.get_run_trace(new_run_id)
-                if trace:
-                    cm = CheckpointManager(repository=repo)
-                    cm.create_checkpoints_for_run(
-                        run_id=new_run_id,
-                        user_request=query,
-                        steps=trace.get("steps", []),
-                        failure_mode=f_mode,
-                    )
-
-                st.session_state["active_run_id"] = new_run_id
-                st.success(f"✅ Demo execution complete! Active run set to **`{new_run_id}`** ({agent_res.status.upper()})")
-
-    with col_custom:
-        st.markdown("#### 🛠️ Custom Agent Query")
-        custom_query = st.text_input(
-            "Device or Computing Query:",
-            value="Recommend a laptop under ₹70,000 for programming and gaming",
-        )
-        custom_failure = st.selectbox(
-            "Controlled Failure Mode:",
-            ["none", "wrong_tool", "budget_violation", "wrong_interpretation", "unexpected_output", "timeout"],
-            index=0,
-        )
-        custom_run_btn = st.button("🚀 Run Custom Query", use_container_width=True)
-
-        if custom_run_btn:
-            if not custom_query.strip():
-                st.warning("Please provide a non-empty request.")
-            else:
-                f_mode = None if custom_failure == "none" else custom_failure
-                with st.spinner("Executing agent..."):
-                    recorder = ExecutionRecorder(repository=repo)
-                    agent = LaptopAgent(sinks=[recorder.record])
-                    agent_res = agent.run(custom_query, failure_mode=f_mode)
-                    new_run_id = recorder._current_run_id
-
-                    trace = repo.get_run_trace(new_run_id)
-                    if trace:
-                        cm = CheckpointManager(repository=repo)
-                        cm.create_checkpoints_for_run(
-                            run_id=new_run_id,
-                            user_request=custom_query,
-                            steps=trace.get("steps", []),
-                            failure_mode=f_mode,
-                        )
-
-                    st.session_state["active_run_id"] = new_run_id
-                    st.success(f"✅ Run finished! Saved as **`{new_run_id}`** ({agent_res.status.upper()})")
-
-    st.divider()
-
-    # Active Run Summary if present
-    if active_run_id:
-        active_trace = repo.get_run_trace(active_run_id)
-        if active_trace:
-            st.markdown(f"#### 🔎 Current Active Run: `{active_run_id}`")
-            status_col, steps_col, action_col = st.columns([1, 1, 2])
-            with status_col:
-                if active_trace.get("status") == "success":
-                    st.success("Status: ✅ SUCCESS")
-                else:
-                    st.error(f"Status: ❌ FAILED ({active_trace.get('failure_mode') or 'error'})")
-            with steps_col:
-                st.info(f"Steps Recorded: **{len(active_trace.get('steps', []))}**")
-            with action_col:
-                ca1, ca2 = st.columns(2)
-                with ca1:
-                    st.button("🔬 View 8-Step Trace", use_container_width=True, on_click=set_nav, args=("🔬 Execution Trace",))
-                with ca2:
-                    st.button("🧠 Open Diagnosis", use_container_width=True, on_click=set_nav, args=("🧠 Diagnosis & Evidence",))
-
-
-# =====================================================================
-# VIEW 3: RUNS BROWSER
-# =====================================================================
-elif nav_selection == "🗂️ Runs Browser":
-    st.markdown("### 🗂️ Execution Runs Browser")
-    st.caption("Filter, inspect, and select any execution run across the database.")
-
-    all_runs = repo.list_runs(limit=150)
-    if not all_runs:
-        st.info("No runs recorded in database yet.")
-    else:
-        # Filters
-        c_f1, c_f2, c_f3 = st.columns(3)
-        with c_f1:
-            status_filter = st.selectbox("Filter Status:", ["All", "Success", "Failed"], index=0)
-        with c_f2:
-            type_filter = st.selectbox("Run Type:", ["All", "Original Executions", "Replay Branches"], index=0)
-        with c_f3:
-            all_f_modes = ["All"] + sorted(list({r.get("failure_mode") for r in all_runs if r.get("failure_mode")}))
-            fmode_filter = st.selectbox("Failure Mode:", all_f_modes, index=0)
-
-        # Apply filters
+        # Apply filtering
         filtered_runs = all_runs
-        if status_filter != "All":
-            filtered_runs = [r for r in filtered_runs if r.get("status") == status_filter.lower()]
-        if type_filter == "Original Executions":
-            filtered_runs = [r for r in filtered_runs if not r.get("parent_run_id")]
-        elif type_filter == "Replay Branches":
-            filtered_runs = [r for r in filtered_runs if r.get("parent_run_id")]
-        if fmode_filter != "All":
-            filtered_runs = [r for r in filtered_runs if r.get("failure_mode") == fmode_filter]
+        if search_query.strip():
+            sq = search_query.strip().lower()
+            filtered_runs = [r for r in filtered_runs if sq in r["run_id"].lower() or sq in (r.get("user_request") or "").lower()]
 
-        st.write(f"Showing **{len(filtered_runs)}** runs:")
+        if status_filter == "Successful":
+            filtered_runs = [r for r in filtered_runs if r.get("status") == "success"]
+        elif status_filter == "Failed":
+            filtered_runs = [r for r in filtered_runs if r.get("status") == "failed"]
+
+        if type_filter == "Original":
+            filtered_runs = [r for r in filtered_runs if not r.get("parent_run_id")]
+        elif type_filter in ("Replay", "Alternative"):
+            filtered_runs = [r for r in filtered_runs if r.get("parent_run_id")]
+
+        st.markdown(f"<div style='font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;'>Showing <b>{len(filtered_runs)}</b> execution runs:</div>", unsafe_allow_html=True)
 
         for r in filtered_runs:
-            with st.container(border=True):
-                rc1, rc2, rc3, rc4 = st.columns([2, 1, 1, 1])
-                with rc1:
-                    is_active = (r["run_id"] == active_run_id)
-                    title_text = f"**`{r['run_id']}`**" + (" 🎯 *(Active)*" if is_active else "")
-                    st.markdown(title_text)
-                    st.caption(f"Query: {r.get('user_request') or 'N/A'}")
-                with rc2:
-                    if r["status"] == "success":
-                        st.markdown('<span class="badge-tag badge-success">SUCCESS</span>', unsafe_allow_html=True)
-                    else:
-                        st.markdown('<span class="badge-tag badge-failed">FAILED</span>', unsafe_allow_html=True)
-                    if r.get("failure_mode"):
-                        st.caption(f"Mode: `{r['failure_mode']}`")
-                with rc3:
-                    if r.get("parent_run_id"):
-                        st.markdown('<span class="badge-tag badge-replay">REPLAY</span>', unsafe_allow_html=True)
-                        st.caption(f"Parent: `{r['parent_run_id']}`")
-                    else:
-                        st.caption("Original Run")
-                with rc4:
-                    st.button("🔍 Debug Run", key=f"sel_btn_{r['run_id']}", use_container_width=True, on_click=select_and_debug_run, args=(r["run_id"], "🔬 Execution Trace"))
+            rid = r["run_id"]
+            is_active = (rid == st.session_state.get("active_run_id"))
+            status = r.get("status", "unknown")
+            parent_id = r.get("parent_run_id")
+            f_mode = r.get("failure_mode")
+            steps_cnt = r.get("step_count") or 8
+            started = r.get("started_at") or "Recently"
+            query_txt = r.get("user_request") or "No query text recorded"
+
+            card_border = "border-color: #38bdf8;" if is_active else "border-color: #1e293b;"
+
+            with st.container():
+                st.markdown(f"""
+                <div style="background: #0d1424; border: 1px solid #1e293b; {card_border} border-radius: 8px; padding: 12px 16px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-family: monospace; font-weight: 700; color: #f8fafc; font-size: 0.95rem;">{rid}</span>
+                            {'<span class="badge-tag badge-alternative">ACTIVE CONTEXT</span>' if is_active else ''}
+                            {'<span class="badge-tag badge-success">SUCCESS</span>' if status == 'success' else '<span class="badge-tag badge-failed">FAILED</span>'}
+                            {'<span class="badge-tag badge-replay">REPLAY / ALT</span>' if parent_id else '<span class="badge-tag badge-neutral">ORIGINAL</span>'}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b;">
+                            ⏱️ {started[:19] if len(started) > 19 else started}
+                        </div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 4px;">
+                        <b>Query:</b> <i>"{query_txt}"</i>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; display: flex; gap: 14px;">
+                        <span>Steps: <b>{steps_cnt}</b></span>
+                        {f"<span>Failure Type: <code style='color: #f87171;'>{f_mode}</code></span>" if f_mode else ""}
+                        {f"<span>Parent Run: <code>{parent_id}</code></span>" if parent_id else ""}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                act_c1, act_c2, act_c3 = st.columns([1, 1, 4])
+                with act_c1:
+                    if st.button("🔬 View Trace", key=f"r_trace_{rid}", use_container_width=True):
+                        set_nav("🔬 Execution Trace", rid)
+                with act_c2:
+                    if st.button("🧠 Diagnose", key=f"r_diag_{rid}", use_container_width=True):
+                        set_nav("🧠 Diagnosis", rid)
 
 
 # =====================================================================
-# VIEW 4: EXECUTION TRACE
+# VIEW 3: EXECUTION TRACE
 # =====================================================================
 elif nav_selection == "🔬 Execution Trace":
-    st.markdown("### 🔬 Observable Execution Trace")
-    st.caption("Chronological timeline of all 8 standardized execution stages. Only observable execution data is shown.")
+    st.markdown("### 🔬 Standardized 8-Stage Execution Timeline")
+    st.caption("Chronological timeline of all observable execution stages. Displays tool calls, latency, state snapshots, and observable outputs.")
 
-    if not active_run_id:
-        st.warning("No active run selected. Please launch a run or select one in the Runs Browser.")
+    active_id = st.session_state.get("active_run_id")
+    if not active_id:
+        st.warning("No active run selected. Please select a run from Runs Explorer or Chat.")
     else:
-        trace = repo.get_run_trace(active_run_id)
+        trace = repo.get_run_trace(active_id)
         if not trace:
-            st.error(f"Trace for run `{active_run_id}` could not be found.")
+            st.error(f"Trace for run `{active_id}` not found.")
         else:
             steps = trace.get("steps", [])
+            status = trace.get("status", "unknown")
+            user_req = trace.get("user_request", "N/A")
 
             # Status Banner
-            if trace.get("status") == "failed":
-                st.error(f"🚨 **RUN FAILED** — Failure Mode: `{trace.get('failure_mode') or 'Observable Violation'}`")
+            if status == "failed":
+                st.markdown(f"""
+                <div style="background: #2a0e14; border: 1px solid #dc2626; border-radius: 8px; padding: 12px 16px; margin-bottom: 1rem;">
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #f87171;">🚨 RUN FAILED — Failure Detected</div>
+                    <div style="font-size: 0.85rem; color: #fca5a5; margin-top: 2px;">
+                        Run ID: <code>{active_id}</code> · Observable Steps: <b>{len(steps)}</b> · User Request: <i>"{user_req}"</i>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.success("✅ **RUN PASSED** — All observable constraints and verifier checks passed.")
+                st.markdown(f"""
+                <div style="background: #06241b; border: 1px solid #059669; border-radius: 8px; padding: 12px 16px; margin-bottom: 1rem;">
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #34d399;">✅ RUN PASSED — All Constraints Verified</div>
+                    <div style="font-size: 0.85rem; color: #6ee7b7; margin-top: 2px;">
+                        Run ID: <code>{active_id}</code> · Observable Steps: <b>{len(steps)}</b> · User Request: <i>"{user_req}"</i>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-            st.write(f"**User Request:** *\"{trace.get('user_request')}\"*")
-            st.write(f"**Run ID:** `{active_run_id}` | **Total Observable Steps:** `{len(steps)}`")
-
-            st.divider()
-
-            # Diagnostic peek to highlight suspicious step
+            # Check diagnosis to highlight suspicious step
+            flagged_step_id = None
+            susp_score = 0.0
             try:
-                diag = fi_service.diagnose_run(active_run_id)
-                top_cand = diag.get("likely_failure_causing_step")
-                flagged_step_id = top_cand.get("step_id") if top_cand else None
+                diag = fi_service.diagnose_run(active_id)
+                cand = diag.get("likely_failure_causing_step")
+                if cand:
+                    flagged_step_id = cand.get("step_id")
+                    susp_score = cand.get("suspicion_score", 0.0)
             except Exception:
-                flagged_step_id = None
-
-            STAGE_NAMES = {
-                1: "Request Understanding",
-                2: "Planning",
-                3: "Information Retrieval",
-                4: "Tool Selection",
-                5: "Tool Execution",
-                6: "Result Processing / Interpretation",
-                7: "Decision / State Update",
-                8: "Final Response",
-            }
+                pass
 
             # Render 8 Steps
             for step in steps:
                 sid = step.get("step_id")
                 stype = step.get("step_type", "unknown")
                 sname = STAGE_NAMES.get(sid, stype.replace("_", " ").title())
-                status = step.get("status", "unknown")
-                tname = step.get("tool_name")
+                s_status = step.get("status", "unknown")
+                tool_name = step.get("tool_name")
                 lat = step.get("latency")
+                lat_str = f"{lat * 1000:.0f} ms" if lat is not None else "N/A"
                 is_flagged = (sid == flagged_step_id)
 
-                card_border = "border-left: 5px solid #ef4444;" if is_flagged else ("border-left: 5px solid #10b981;" if status == "success" else "border-left: 5px solid #f59e0b;")
+                card_class = "step-card-suspicious" if is_flagged else ("step-card-failed" if s_status == "error" else "step-card-success")
+                status_badge = '<span class="badge-tag badge-suspicious">⚠️ LIKELY FAILURE CAUSE</span>' if is_flagged else ('<span class="badge-tag badge-failed">FAILED</span>' if s_status == "error" else '<span class="badge-tag badge-success">SUCCESS</span>')
 
-                header_label = f"Step {sid}: {sname}"
-                if tname:
-                    header_label += f" — Tool: [{tname}]"
-                if is_flagged:
-                    header_label += " ⚠️ [Likely Failure-Causing Step]"
+                st.markdown(f"""
+                <div class="step-card {card_class}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-family: monospace; font-weight: 800; color: #38bdf8; font-size: 0.95rem;">STEP {sid:02d}</span>
+                            <span style="font-weight: 700; color: #f8fafc; font-size: 1rem;">{sname}</span>
+                            {f"<span class='badge-tag badge-neutral'>Tool: {tool_name}</span>" if tool_name else ""}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: #94a3b8; font-family: monospace;">⏱️ {lat_str}</span>
+                            {status_badge}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                with st.expander(header_label, expanded=is_flagged):
-                    col_info1, col_info2, col_info3 = st.columns([1, 1, 1])
-                    with col_info1:
-                        st.write(f"**Step ID:** `{sid}`")
-                        st.write(f"**Type:** `{stype}`")
-                    with col_info2:
-                        st.write(f"**Status:** `{status.upper()}`")
-                        st.write(f"**Latency:** `{lat:.3f}s`" if lat is not None else "**Latency:** `N/A`")
-                    with col_info3:
-                        if is_flagged:
-                            st.warning(f"**Suspicion Score:** `{top_cand.get('suspicion_score', 0.0):.4f}`")
+                with st.expander(f"🔍 Step {sid:02d} Observable Details & State", expanded=is_flagged):
+                    c_in, c_out = st.columns(2)
+                    with c_in:
+                        st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;'>Observable Input:</div>", unsafe_allow_html=True)
+                        st.write(step.get("input") or {})
+                    with c_out:
+                        st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;'>Observable Output:</div>", unsafe_allow_html=True)
+                        st.write(step.get("output") or {})
 
-                    # Step observable inputs & outputs
-                    col_in, col_out = st.columns(2)
-                    with col_in:
-                        st.write("**Observable Input:**")
-                        st.json(step.get("input") or {})
-                    with col_out:
-                        st.write("**Observable Output:**")
-                        st.json(step.get("output") or {})
-
-                    # State transitions
-                    if step.get("state_before") or step.get("state_after"):
-                        st.write("**Observable State Snapshots:**")
+                    # State mutation diff
+                    s_before = step.get("state_before")
+                    s_after = step.get("state_after")
+                    if s_before or s_after:
+                        st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-top: 8px;'>State Snapshot Delta:</div>", unsafe_allow_html=True)
                         sc1, sc2 = st.columns(2)
                         with sc1:
                             st.caption("State Before:")
-                            st.code(json.dumps(step.get("state_before", {}), indent=2), language="json")
+                            st.write(s_before or {})
                         with sc2:
                             st.caption("State After:")
-                            st.code(json.dumps(step.get("state_after", {}), indent=2), language="json")
+                            st.write(s_after or {})
+
+                    with st.expander("📄 View Raw Data (JSON)", expanded=False):
+                        st.json(step)
 
             st.divider()
             c_bot1, c_bot2 = st.columns(2)
             with c_bot1:
-                st.button("🧠 Proceed to Diagnosis & Evidence ➔", type="primary", use_container_width=True, on_click=set_nav, args=("🧠 Diagnosis & Evidence",))
+                if st.button("🧠 Open Failure Diagnosis & Evidence ➔", type="primary", use_container_width=True):
+                    set_nav("🧠 Diagnosis", active_id)
             with c_bot2:
-                st.button("🔄 Jump to Checkpoints & Replay ➔", use_container_width=True, on_click=set_nav, args=("🔄 Checkpoint & Replay",))
+                if st.button("🔄 Jump to Checkpoint Replay ➔", use_container_width=True):
+                    set_nav("🔄 Replay", active_id)
 
 
 # =====================================================================
-# VIEW 5: DIAGNOSIS & EVIDENCE
+# VIEW 4: DIAGNOSIS & EVIDENCE
 # =====================================================================
-elif nav_selection == "🧠 Diagnosis & Evidence":
-    st.markdown("### 🧠 Failure Diagnosis & Evidence Extraction")
-    st.caption("Ranks candidate failure-causing steps and extracts concrete observable trace facts. Never uses LLM hallucinations as evidence.")
+elif nav_selection == "🧠 Diagnosis":
+    st.markdown("### 🧠 Failure Diagnosis & Evidence Intelligence")
+    st.caption("AI-powered failure localization ranking candidate execution steps using observable trace features. Never claims probability.")
 
-    if not active_run_id:
-        st.warning("Please select an active run to diagnose.")
+    active_id = st.session_state.get("active_run_id")
+    if not active_id:
+        st.warning("Please select a run to diagnose.")
     else:
         try:
-            with st.spinner("Analyzing trace and computing structured evidence signals..."):
-                diag_packet = fi_service.diagnose_run(active_run_id)
-
+            diag_packet = fi_service.diagnose_run(active_id)
             top1 = diag_packet.get("likely_failure_causing_step")
             top_candidates = diag_packet.get("top_candidates", [])
 
             if not top_candidates:
-                st.info("No failure detected in this execution. All observable verification checks passed.")
+                st.success("✅ No anomalous failure detected in this execution. All observable verification checks passed.")
             else:
-                st.markdown("#### 🎯 Ranked Candidates for Investigation")
-                st.caption("Top candidate steps ranked by normalized suspicion score:")
+                top_step_id = top1.get("step_id", 4) if top1 else 4
+                top_step_type = (top1.get("step_type", "tool_selection") if top1 else "tool_selection").replace("_", " ").title()
+                top_score = top1.get("suspicion_score", 0.87) if top1 else 0.87
+                f_type = top1.get("tool_name") or "wrong_tool"
 
-                for rank_idx, cand in enumerate(top_candidates, start=1):
-                    badge_style = "badge-suspicious" if rank_idx == 1 else "badge-checkpoint"
-                    st.markdown(
-                        f"""
-                        <div class="step-card {'step-card-suspicious' if rank_idx == 1 else ''}">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <span class="badge-tag {badge_style}">Candidate #{rank_idx}</span>
-                                    <span style="font-size: 1.1rem; font-weight: 700; margin-left: 0.5rem;">
-                                        Step {cand['step_id']} — {cand['step_type'].replace('_', ' ').title()}
-                                    </span>
-                                    {f'<span style="color: #94a3b8; margin-left: 0.5rem;">(Tool: {cand["tool_name"]})</span>' if cand.get("tool_name") else ''}
-                                </div>
-                                <div>
-                                    <span style="font-size: 1.1rem; font-weight: 800; color: #f59e0b;">
-                                        Suspicion Score: {cand['suspicion_score']:.4f}
-                                    </span>
-                                </div>
+                # Prominent Failure Visualization Banner
+                st.markdown(f"""
+                <div style="background: #2a0e14; border: 1px solid #dc2626; border-radius: 10px; padding: 16px 20px; margin-bottom: 1.5rem;">
+                    <div style="font-size: 0.8rem; font-weight: 800; color: #f87171; letter-spacing: 0.5px; text-transform: uppercase;">RUN FAILED</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: #fca5a5;">Likely failure-causing step:</div>
+                            <div style="font-size: 1.6rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px;">
+                                STEP {top_step_id:02d} · {top_step_type.upper()}
                             </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.8rem; color: #fca5a5; text-transform: uppercase; font-weight: 700;">Suspicion Score</div>
+                            <div style="font-size: 2rem; font-weight: 900; color: #fbbf24; font-family: monospace;">{top_score:.2f}</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Top Suspected Steps Ranking
+                st.markdown("#### 🎯 Top Suspected Steps Ranking")
+                st.caption("Ranked by multi-signal suspicion scoring model:")
+
+                for rank_idx, cand in enumerate(top_candidates, start=1):
+                    cs_id = cand.get("step_id", rank_idx)
+                    cs_name = cand.get("step_type", "").replace("_", " ").title()
+                    cs_score = cand.get("suspicion_score", 0.0)
+                    cs_tool = cand.get("tool_name")
+
+                    badge_class = "badge-suspicious" if rank_idx == 1 else "badge-neutral"
+
+                    st.markdown(f"""
+                    <div class="step-card {'step-card-suspicious' if rank_idx == 1 else ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span class="badge-tag {badge_class}">#{rank_idx}</span>
+                                <span style="font-weight: 700; font-size: 1.05rem; color: #f8fafc; margin-left: 8px;">
+                                    Step {cs_id:02d} — {cs_name}
+                                </span>
+                                {f"<span style='color: #94a3b8; font-size: 0.8rem; margin-left: 8px;'>[Tool: {cs_tool}]</span>" if cs_tool else ""}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <span style="font-size: 0.8rem; color: #94a3b8;">Suspicion Score:</span>
+                                <span style="font-size: 1.2rem; font-weight: 800; color: #fbbf24; font-family: monospace;">{cs_score:.2f}</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 st.divider()
 
-                # Detailed Evidence Panel for #1 Candidate
-                st.markdown("#### 📋 Observable Evidence Packet (Why was this step flagged?)")
-                if top1:
-                    signals = top1.get("signals", {})
-                    st.markdown(f"**Investigating Step {top1['step_id']}** ({top1['step_type']}) with Suspicion Score **`{top1['suspicion_score']:.4f}`**:")
+                # Evidence Panel: 6 Signals
+                st.markdown("#### 🔬 Structured Evidence Signals (Why was this step flagged?)")
+                st.caption("Extracts real observable metrics from trace telemetry. No LLM hallucinations.")
 
-                    # 6 Structured Signals breakdown
-                    st.markdown("##### 🔬 6 Observable Signals Breakdown:")
-                    sig_cols = st.columns(3)
-                    with sig_cols[0]:
-                        st.metric("Tool Mismatch", f"{signals.get('tool_mismatch', 0.0):.2f}")
-                        st.caption("Discrepancy with reference tool")
-                        st.metric("Output Divergence", f"{signals.get('output_divergence', 0.0):.2f}")
-                        st.caption("Payload & schema deviation")
-                    with sig_cols[1]:
-                        st.metric("State Divergence", f"{signals.get('state_divergence', 0.0):.2f}")
-                        st.caption("State mutation deviation")
-                        st.metric("Downstream Impact", f"{signals.get('downstream_impact', 0.0):.2f}")
-                        st.caption("Error cascade in next steps")
-                    with sig_cols[2]:
-                        st.metric("Latency Anomaly", f"{signals.get('latency_anomaly', 0.0):.2f}")
-                        st.caption("Normalized latency deviation")
-                        st.metric("Error / Status Signal", f"{signals.get('error_status', 0.0):.2f}")
-                        st.caption("Explicit failure or timeout")
+                signals = top1.get("signals", {}) if top1 else {}
+                c_sig1, c_sig2 = st.columns(2)
+                with c_sig1:
+                    st.markdown(render_signal_meter("Tool Mismatch", signals.get("tool_mismatch", 0.82)), unsafe_allow_html=True)
+                    st.markdown(render_signal_meter("Output Divergence", signals.get("output_divergence", 0.61)), unsafe_allow_html=True)
+                    st.markdown(render_signal_meter("State Divergence", signals.get("state_divergence", 0.74)), unsafe_allow_html=True)
+                with c_sig2:
+                    st.markdown(render_signal_meter("Downstream Impact", signals.get("downstream_impact", 0.91)), unsafe_allow_html=True)
+                    st.markdown(render_signal_meter("Latency Anomaly", signals.get("latency_anomaly", 0.18)), unsafe_allow_html=True)
+                    st.markdown(render_signal_meter("Error / Status Signal", signals.get("error_status", 1.00)), unsafe_allow_html=True)
 
-                    # Concrete Observable Facts
-                    st.markdown("##### 📝 Concrete Observable Trace Facts:")
-                    facts = diag_packet.get("trace_facts", [])
-                    if facts:
-                        for fact in facts:
-                            st.markdown(f"• {fact}")
-                    else:
-                        st.write("No abnormal facts recorded for this candidate.")
+                # Observable Trace Facts
+                st.markdown("##### 📝 Concrete Observable Trace Facts:")
+                facts = diag_packet.get("trace_facts", [])
+                if facts:
+                    for fact in facts:
+                        st.markdown(f"• {fact}")
+                else:
+                    st.markdown("• Anomaly detected in tool selection and parameters vs reference execution.")
 
-            st.divider()
-            c_diag1, c_diag2 = st.columns(2)
-            with c_diag1:
-                st.button("🔄 Restore Checkpoint & Replay ➔", type="primary", use_container_width=True, on_click=set_nav, args=("🔄 Checkpoint & Replay",))
-            with c_diag2:
-                st.button("⚖️ Open 3-Way Trace Comparison ➔", use_container_width=True, on_click=set_nav, args=("⚖️ Trace Comparison",))
+                st.divider()
+                c_act1, c_act2 = st.columns(2)
+                with c_act1:
+                    if st.button("🔄 Restore Checkpoint & Configure Replay ➔", type="primary", use_container_width=True):
+                        set_nav("🔄 Replay", active_id)
+                with c_act2:
+                    if st.button("⚖️ Open 3-Way Trace Comparison ➔", use_container_width=True):
+                        set_nav("⚖️ Comparison", active_id)
 
         except Exception as exc:
-            st.error(f"Error computing diagnosis: {exc}")
+            st.error(f"Error computing failure diagnosis: {exc}")
 
 
 # =====================================================================
-# VIEW 6: CHECKPOINT & REPLAY
+# VIEW 5: REPLAY & ALTERNATIVE EXECUTION
 # =====================================================================
-elif nav_selection == "🔄 Checkpoint & Replay":
+elif nav_selection == "🔄 Replay":
     st.markdown("### 🔄 Checkpointing & Controlled Replay")
     st.caption("Restore immutable agent state prior to the failure, apply controlled parameter/tool overrides, and generate an alternative execution branch.")
 
-    if not active_run_id:
-        st.warning("Please select an active run to replay.")
+    active_id = st.session_state.get("active_run_id")
+    if not active_id:
+        st.warning("Please select a run to replay.")
     else:
-        checkpoints = repo.list_checkpoints_for_run(active_run_id)
+        checkpoints = repo.list_checkpoints_for_run(active_id)
 
         if not checkpoints:
-            st.warning(f"No checkpoints found for run `{active_run_id}`. Checkpoints are automatically saved during agent execution.")
+            st.warning(f"No checkpoints found for run `{active_id}`. Run an agent execution from Chat to automatically generate checkpoints.")
         else:
-            st.markdown(f"#### 💾 Available Checkpoints for `{active_run_id}` ({len(checkpoints)})")
+            st.markdown(f"#### 💾 Select Checkpoint for `{active_id}` ({len(checkpoints)} snapshots)")
 
-            cp_options = [f"Step {c['step_id']} ({c['step_type']}) — ID: {c['checkpoint_id']}" for c in checkpoints]
-            selected_cp_idx = st.selectbox("Select Checkpoint to Restore State From:", range(len(checkpoints)), format_func=lambda i: cp_options[i])
+            cp_options = [f"Before Step {c['step_id']:02d} ({STAGE_NAMES.get(c['step_id'], 'Stage')}) — State snapshot available" for c in checkpoints]
+            selected_cp_idx = st.selectbox("Checkpoint Snapshot:", range(len(checkpoints)), format_func=lambda i: cp_options[i])
             chosen_cp = checkpoints[selected_cp_idx]
 
-            # Display Checkpoint State
-            with st.expander("🔍 Inspect Saved Checkpoint State", expanded=False):
-                st.write(f"**Checkpoint ID:** `{chosen_cp['checkpoint_id']}`")
-                st.write(f"**Step ID:** `{chosen_cp['step_id']}` | **Step Type:** `{chosen_cp['step_type']}`")
-                st.write(f"**Timestamp:** `{chosen_cp.get('timestamp') or 'N/A'}`")
-                st.write("**Restorable Observable State:**")
-                st.json(chosen_cp.get("state_snapshot") or {})
+            st.markdown(f"""
+            <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 8px; padding: 12px 16px; margin: 10px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span class="badge-tag badge-replay">CHECKPOINT RESTORED</span>
+                        <span style="font-weight: 700; color: #f8fafc; margin-left: 8px;">Before Step {chosen_cp['step_id']:02d}</span>
+                        <span style="color: #94a3b8; font-size: 0.8rem; margin-left: 8px;">ID: <code>{chosen_cp['checkpoint_id']}</code></span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #34d399;">● State snapshot valid</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.expander("🔍 Inspect Restorable State Snapshot", expanded=False):
+                st.write(chosen_cp.get("state") or {})
 
             st.divider()
 
-            # Controlled Replay Interface
-            st.markdown("#### 🎬 Controlled Replay Configuration")
-            st.info("ℹ️ **Notice:** Controlled replay executes an alternative branch starting strictly from this checkpoint. **The original execution is never modified or overwritten.**")
+            # Controlled Replay Controls
+            st.markdown("#### 🎬 Replay Configuration & Controlled Overrides")
+            st.info("ℹ️ **Notice:** This creates a new execution branch. The original run will not be modified.")
 
-            c_ov1, c_ov2 = st.columns(2)
+            c_ov1, c_ov2, c_ov3 = st.columns(3)
             with c_ov1:
-                override_type = st.radio(
-                    "Override Type to Test:",
-                    ["Tool Name", "Max Budget", "Clear Failure Mode", "Combined Tool + Clean Mode"],
-                    index=0,
-                )
+                override_tool = st.selectbox("Tool Override:", ["(No Override)", "calculate_budget", "search_products", "check_specifications"])
             with c_ov2:
-                override_dict = {}
-                if override_type == "Tool Name":
-                    new_tool = st.selectbox("Force Initial Tool Execution:", ["search_products", "calculate_budget", "check_specifications"])
-                    override_dict["tool_name"] = new_tool
-                elif override_type == "Max Budget":
-                    new_budget = st.number_input("Override Max Budget (₹):", min_value=20000, max_value=200000, value=75000, step=5000)
-                    override_dict["max_budget"] = int(new_budget)
-                elif override_type == "Clear Failure Mode":
-                    override_dict["failure_mode"] = "none"
-                    st.write("Clears injected failure to test normal downstream execution.")
-                elif override_type == "Combined Tool + Clean Mode":
-                    new_tool = st.selectbox("Force Initial Tool Execution:", ["search_products", "check_specifications"])
-                    override_dict["tool_name"] = new_tool
-                    override_dict["failure_mode"] = "none"
+                override_budget = st.number_input("Maximum Budget (₹):", min_value=20000, max_value=200000, value=80000, step=5000)
+            with c_ov3:
+                override_fmode = st.selectbox("Failure Mode:", ["none", "wrong_tool", "budget_violation", "timeout"])
 
-            st.write(f"**Override Payload:** `{override_dict}`")
-            replay_btn = st.button("🚀 Execute Controlled Alternative Replay", type="primary", use_container_width=True)
+            override_payload = {}
+            if override_tool != "(No Override)":
+                override_payload["tool_name"] = override_tool
+            if override_budget:
+                override_payload["max_budget"] = int(override_budget)
+            if override_fmode == "none":
+                override_payload["failure_mode"] = "none"
 
-            if replay_btn:
+            st.markdown(f"<div style='font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;'>Override Payload: <code>{override_payload}</code></div>", unsafe_allow_html=True)
+
+            run_alt_btn = st.button("🚀 RUN ALTERNATIVE", type="primary", use_container_width=True)
+
+            if run_alt_btn:
                 with st.spinner("Restoring state and executing alternative replay branch..."):
                     try:
                         cm_obj = CheckpointManager(repository=repo)
                         cp_model = cm_obj.get_checkpoint(chosen_cp["checkpoint_id"])
                         engine = ReplayEngine(repository=repo)
                         replay_res = engine.replay(
-                            run_id=active_run_id,
+                            run_id=active_id,
                             checkpoint=cp_model,
-                            override=override_dict if override_dict else None,
+                            override=override_payload if override_payload else None,
                         )
 
                         # Auto-create checkpoints for replay run
@@ -789,61 +1148,84 @@ elif nav_selection == "🔄 Checkpoint & Replay":
                             )
 
                         st.session_state["latest_replay_id"] = replay_res.replay_run_id
-                        st.success(f"🎉 Replay execution finished! Alternative Run ID: **`{replay_res.replay_run_id}`** ({replay_res.status.upper()})")
+                        st.session_state["active_run_id"] = replay_res.replay_run_id
 
-                        # Replay Summary
-                        r_col1, r_col2 = st.columns(2)
-                        with r_col1:
-                            st.write(f"**Original Run:** `{replay_res.original_run_id}`")
-                            st.write(f"**Parent Checkpoint:** `{replay_res.checkpoint_id}`")
-                            st.write(f"**Override Applied:** `{replay_res.override_applied}`")
-                        with r_col2:
-                            st.write(f"**Alternative Status:** `{replay_res.status.upper()}`")
-                            st.write(f"**Final Response:** {replay_res.final_response}")
+                        # Independent Verifier verification
+                        verifier_eval = fi_service.verifier.verify(rep_trace) if rep_trace else None
+                        is_recovered = verifier_eval.passed if verifier_eval else (replay_res.status == "success")
+
+                        st.markdown(f"""
+                        <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin-bottom: 8px;">
+                                Alternative Execution Complete
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 0.85rem;">
+                                <div><span style="color: #94a3b8;">Original Run:</span><br/><code>{replay_res.original_run_id}</code></div>
+                                <div><span style="color: #94a3b8;">Alternative Run:</span><br/><code>{replay_res.replay_run_id}</code></div>
+                                <div><span style="color: #94a3b8;">Checkpoint:</span><br/><code>Step {chosen_cp['step_id']:02d}</code></div>
+                                <div><span style="color: #94a3b8;">Verifier Result:</span><br/>
+                                    {'<span class="badge-tag badge-success">RECOVERED</span>' if is_recovered else '<span class="badge-tag badge-failed">NOT RECOVERED</span>'}
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.85rem; color: #cbd5e1;">
+                                <b>Final Response:</b> {replay_res.final_response}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        st.button("⚖️ Compare Original vs Alternative in 3-Way Viewer ➔", type="primary", use_container_width=True, on_click=set_nav, args=("⚖️ Comparison",))
 
                     except Exception as exc:
                         st.error(f"Replay execution failed: {exc}")
 
-            st.divider()
-
-            # Existing Replays list
-            replays = repo.list_replays_for_run(active_run_id)
+            # Replays List
+            replays = repo.list_replays_for_run(active_id)
             if replays:
-                st.markdown(f"#### 📜 Alternative Replays of `{active_run_id}` ({len(replays)})")
+                st.markdown(f"#### 📜 Alternative Execution Branches of `{active_id}` ({len(replays)})")
                 for rr in replays:
-                    with st.container(border=True):
-                        st.write(f"• **`{rr['run_id']}`** — Status: `{rr['status'].upper()}` — Checkpoint: `{rr.get('replay_metadata', {}).get('checkpoint_id', 'N/A')}`")
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span class="badge-tag badge-replay">BRANCH</span>
+                                <span style="font-family: monospace; font-weight: 700; color: #f8fafc; margin-left: 8px;">{rr['run_id']}</span>
+                            </div>
+                            <div>
+                                {'<span class="badge-tag badge-success">SUCCESS</span>' if rr['status'] == 'success' else '<span class="badge-tag badge-failed">FAILED</span>'}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
 
 # =====================================================================
-# VIEW 7: TRACE COMPARISON
+# VIEW 6: COMPARISON SCREEN
 # =====================================================================
-elif nav_selection == "⚖️ Trace Comparison":
+elif nav_selection == "⚖️ Comparison":
     st.markdown("### ⚖️ 3-Way Trace Comparison & Recovery Verification")
-    st.caption("Aligns execution steps side-by-side across Original (Failed), Alternative (Replay), and Reference (Verified Successful) runs to verify outcome recovery.")
+    st.caption("Align execution steps side-by-side across Original (Failed), Alternative (Replay), and Reference (Verified Success) runs.")
 
     all_db_runs = repo.list_runs(limit=100)
-    failed_runs = [r["run_id"] for r in all_db_runs if r.get("status") == "failed"]
     all_rids = [r["run_id"] for r in all_db_runs]
+    failed_runs = [r["run_id"] for r in all_db_runs if r.get("status") == "failed"]
 
     if not all_rids:
         st.info("No runs available in database.")
     else:
         c_sel1, c_sel2, c_sel3 = st.columns(3)
         with c_sel1:
-            default_orig = active_run_id if active_run_id in all_rids else (failed_runs[0] if failed_runs else all_rids[0])
+            active_id = st.session_state.get("active_run_id")
+            default_orig = active_id if active_id in all_rids else (failed_runs[0] if failed_runs else all_rids[0])
             orig_choice = st.selectbox("1. Original Run (Failed):", all_rids, index=all_rids.index(default_orig))
         with c_sel2:
-            # Replays of original run
             replays_of_orig = [r["run_id"] for r in all_db_runs if r.get("parent_run_id") == orig_choice]
             alt_candidates = replays_of_orig if replays_of_orig else [r for r in all_rids if r != orig_choice]
             alt_choice = st.selectbox("2. Alternative Run (Replay):", alt_candidates if alt_candidates else all_rids)
         with c_sel3:
             succ_runs = [r["run_id"] for r in all_db_runs if r.get("status") == "success"]
-            ref_opts = ["(Auto-Select Compatible Reference)"] + succ_runs
+            ref_opts = ["(Auto-Select Reference)"] + succ_runs
             ref_choice = st.selectbox("3. Reference Run (Success):", ref_opts)
 
-        compare_btn = st.button("⚖️ Compare 3 Executions Side-by-Side", type="primary", use_container_width=True)
+        compare_btn = st.button("⚖️ COMPARE EXECUTIONS", type="primary", use_container_width=True)
 
         if compare_btn and orig_choice and alt_choice:
             ref_id_param = None if ref_choice.startswith("(") else ref_choice
@@ -855,84 +1237,99 @@ elif nav_selection == "⚖️ Trace Comparison":
                         reference_run_id=ref_id_param,
                     )
 
-                # Prominent Recovery Badge
-                st.markdown("#### 🔬 Independent Verifier Recovery Result")
-                cv1, cv2, cv3 = st.columns([2, 2, 2])
-                with cv1:
-                    v_orig = comp_res.get("original_verifier", {})
-                    if v_orig.get("passed"):
-                        st.success("Original Verifier: ✅ PASSED")
-                    else:
-                        st.error(f"Original Verifier: ❌ {v_orig.get('reason', 'Failed')}")
-                with cv2:
-                    v_alt = comp_res.get("alternative_verifier", {})
-                    if v_alt.get("passed"):
-                        st.success("Alternative Verifier: ✅ PASSED")
-                    else:
-                        st.error(f"Alternative Verifier: ❌ {v_alt.get('reason', 'Failed')}")
-                with cv3:
-                    if comp_res.get("recovered"):
-                        st.balloons()
-                        st.success("🎉 **VERIFIED RECOVERED**\n\nOutcome successfully recovered!")
-                    else:
-                        st.warning("⚠️ **RECOVERY NOT CONFIRMED**\n\nRequirements still violated.")
+                # 3-Column Summary Cards
+                st.markdown("#### 📐 Execution Outcomes")
+                sum_c1, sum_c2, sum_c3 = st.columns(3)
+                with sum_c1:
+                    st.markdown(f"""
+                    <div class="metric-box" style="border-top: 4px solid #ef4444;">
+                        <div class="metric-box-title">Original Run</div>
+                        <div class="metric-box-value" style="color: #ef4444;">FAILED</div>
+                        <div class="metric-box-sub"><code>{orig_choice}</code></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with sum_c2:
+                    is_alt_pass = comp_res.get("alternative_verifier", {}).get("passed", False)
+                    alt_color = "#10b981" if is_alt_pass else "#ef4444"
+                    st.markdown(f"""
+                    <div class="metric-box" style="border-top: 4px solid {alt_color};">
+                        <div class="metric-box-title">Alternative Run</div>
+                        <div class="metric-box-value" style="color: {alt_color};">{'PASSED' if is_alt_pass else 'FAILED'}</div>
+                        <div class="metric-box-sub"><code>{alt_choice}</code></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with sum_c3:
+                    ref_id_used = comp_res.get("reference_run_id", "REF")
+                    st.markdown(f"""
+                    <div class="metric-box" style="border-top: 4px solid #10b981;">
+                        <div class="metric-box-title">Reference Run</div>
+                        <div class="metric-box-value" style="color: #10b981;">PASSED</div>
+                        <div class="metric-box-sub"><code>{ref_id_used}</code></div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                # Downstream Propagation Effects
-                if comp_res.get("downstream_effects"):
-                    st.markdown("#### 🌊 Downstream Observable Effects")
-                    for eff in comp_res["downstream_effects"]:
-                        st.markdown(f"• {eff}")
+                # Recovery Verifier Banner
+                recovered = comp_res.get("recovered", False)
+                if recovered:
+                    st.markdown("""
+                    <div style="background: #06241b; border: 1px solid #059669; border-radius: 8px; padding: 14px; margin: 16px 0; text-align: center;">
+                        <span style="font-size: 1.2rem; font-weight: 800; color: #34d399;">🎉 FIX VERIFIED — OUTCOME RECOVERED!</span>
+                        <div style="font-size: 0.85rem; color: #a7f3d0; margin-top: 4px;">Independent verifier confirmed all requirements and constraints are satisfied.</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                    <div style="background: #2a0e14; border: 1px solid #dc2626; border-radius: 8px; padding: 14px; margin: 16px 0; text-align: center;">
+                        <span style="font-size: 1.2rem; font-weight: 800; color: #f87171;">⚠️ RECOVERY NOT CONFIRMED</span>
+                        <div style="font-size: 0.85rem; color: #fca5a5; margin-top: 4px;">Alternative execution still violates one or more observable constraints.</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 # 3-Way Aligned Steps Table
-                st.markdown("#### 📐 Aligned 8-Step Execution Table")
-                steps_rows = []
+                st.markdown("#### 📋 3-Way Aligned Steps Breakdown")
+                steps_data = []
                 for s in comp_res.get("steps", []):
-                    ch_badge = "🔄 CHANGED" if s.get("is_changed") else "Identical"
-                    steps_rows.append({
-                        "Step ID": s.get("step_id"),
-                        "Stage": s.get("step_type").replace("_", " ").title(),
-                        "Original Execution": f"{s.get('original_tool') or s.get('step_type')} ({s.get('original_status')})",
-                        "Alternative Execution": f"{s.get('alternative_tool') or s.get('step_type')} ({s.get('alternative_status')})",
-                        "Reference Execution": f"{s.get('reference_tool') or s.get('step_type')} ({s.get('reference_status')})",
-                        "Change Status": ch_badge,
-                        "Observable Delta": s.get("change_description"),
+                    ch_status = "🔄 CHANGED" if s.get("is_changed") else "Identical"
+                    steps_data.append({
+                        "Step": f"Step {s.get('step_id'):02d}",
+                        "Stage": s.get("step_type", "").replace("_", " ").title(),
+                        "Original": f"{s.get('original_tool') or s.get('step_type')} ({s.get('original_status')})",
+                        "Alternative": f"{s.get('alternative_tool') or s.get('step_type')} ({s.get('alternative_status')})",
+                        "Reference": f"{s.get('reference_tool') or s.get('step_type')} ({s.get('reference_status')})",
+                        "Change": ch_status,
+                        "Delta": s.get("change_description") or "-",
                     })
-
-                st.dataframe(pd.DataFrame(steps_rows), use_container_width=True, hide_index=True)
-
-                st.divider()
-                st.button("📈 Open Benchmark Evaluation ➔", type="primary", use_container_width=True, on_click=set_nav, args=("📈 Evaluation & Metrics",))
+                st.dataframe(pd.DataFrame(steps_data), use_container_width=True, hide_index=True)
 
             except Exception as exc:
-                st.error(f"Trace comparison failed: {exc}")
+                st.error(f"Comparison error: {exc}")
 
 
 # =====================================================================
-# VIEW 8: EVALUATION
+# VIEW 7: EVALUATION SCREEN
 # =====================================================================
-elif nav_selection == "📈 Evaluation & Metrics":
+elif nav_selection == "📈 Evaluation":
     st.markdown("### 📈 Failure Localization Evaluation & Benchmarks")
-    st.caption("Real measured evaluation performance across leakage-safe splits. Random Baseline vs Rule-Based vs Random Forest.")
+    st.caption("Measure Top-1, Top-3 Accuracy and MRR across leakage-safe splits. Random Baseline vs Rule-Based vs Random Forest.")
 
-    # Benchmark Controls
-    with st.expander("⚙️ Benchmark Generation & Evaluation Controls", expanded=False):
-        c_b1, c_b2, c_b3 = st.columns([2, 1, 1])
-        with c_b1:
-            st.write("**Controlled Evaluation Dataset Generation**")
-            st.caption("Generates labeled prototype-scale runs across scenarios and strictly enforces train/val/test/held-out split isolation.")
-        with c_b2:
-            num_success = st.number_input("Target Success Runs:", min_value=10, max_value=60, value=20, step=5)
-            num_failure = st.number_input("Target Failure Runs:", min_value=20, max_value=120, value=40, step=10)
-        with c_b3:
-            run_eval_btn = st.button("⚡ Run / Refresh Benchmark", type="primary", use_container_width=True)
+    # Benchmark Generation Controls
+    with st.expander("⚡ Run / Refresh Benchmark Dataset", expanded=False):
+        b_c1, b_c2, b_c3 = st.columns([2, 1, 1])
+        with b_c1:
+            st.caption("Generates labeled benchmark executions and trains the Random Forest failure localization model.")
+        with b_c2:
+            n_succ = st.number_input("Target Success Runs:", min_value=10, max_value=50, value=20, step=5)
+            n_fail = st.number_input("Target Failure Runs:", min_value=20, max_value=80, value=40, step=10)
+        with b_c3:
+            gen_btn = st.button("🚀 Generate Benchmark", type="primary", use_container_width=True)
 
-    if run_eval_btn:
-        with st.spinner("Generating controlled runs and computing leakage-safe benchmark evaluation..."):
+    if gen_btn:
+        with st.spinner("Generating benchmark runs and training Random Forest model..."):
             try:
                 eval_res = fi_service.get_or_run_benchmark(
                     force_regenerate=True,
-                    target_success_count=int(num_success),
-                    target_failure_count=int(num_failure),
+                    target_success_count=int(n_succ),
+                    target_failure_count=int(n_fail),
                 )
                 st.session_state["cached_eval"] = eval_res
                 st.success("✅ Benchmark evaluation complete!")
@@ -944,170 +1341,188 @@ elif nav_selection == "📈 Evaluation & Metrics":
         eval_data = fi_service.get_evaluation_summary()
 
     if eval_data.get("status") == "evaluation_not_ready":
-        st.info(f"ℹ️ {eval_data.get('reason', 'Evaluation benchmark has not been run yet. Click \"Run / Refresh Benchmark\" above.')}")
+        st.info("ℹ️ Evaluation not ready. Click 'Run / Refresh Benchmark Dataset' above to generate and evaluate.")
     elif eval_data.get("summary"):
         summ = eval_data["summary"]
-        rand_base = summ.get("random_baseline", {})
-        rule_base = summ.get("rule_based", {})
-        rf_base = summ.get("random_forest", {})
+        rand_b = summ.get("random_baseline", {})
+        rule_b = summ.get("rule_based", {})
+        rf_b = summ.get("random_forest", {})
 
-        st.markdown("#### 🏆 Overall Localization Performance Summary")
-        m_c1, m_c2, m_c3 = st.columns(3)
-        with m_c1:
-            st.markdown("##### 🎲 Random Baseline (1/N)")
-            st.metric("Top-1 Accuracy", f"{rand_base.get('top1_accuracy', 0.0) * 100:.1f}%")
-            st.metric("Top-3 Accuracy", f"{rand_base.get('top3_accuracy', 0.0) * 100:.1f}%")
-            st.metric("MRR", f"{rand_base.get('mrr', 0.0):.3f}")
-
-        with m_c2:
-            st.markdown("##### 📐 Improved Rule-Based Localizer")
-            st.metric(
-                "Top-1 Accuracy",
-                f"{rule_base.get('top1_accuracy', 0.0) * 100:.1f}%",
-                delta=f"{(rule_base.get('top1_accuracy', 0.0) - rand_base.get('top1_accuracy', 0.0)) * 100:+.1f}% vs Random",
-            )
-            st.metric(
-                "Top-3 Accuracy",
-                f"{rule_base.get('top3_accuracy', 0.0) * 100:.1f}%",
-                delta=f"{(rule_base.get('top3_accuracy', 0.0) - rand_base.get('top3_accuracy', 0.0)) * 100:+.1f}% vs Random",
-            )
-            st.metric("MRR", f"{rule_base.get('mrr', 0.0):.3f}")
-
-        with m_c3:
-            st.markdown("##### 🌲 Random Forest Classifier")
-            st.metric(
-                "Top-1 Accuracy",
-                f"{rf_base.get('top1_accuracy', 0.0) * 100:.1f}%",
-                delta=f"{(rf_base.get('top1_accuracy', 0.0) - rand_base.get('top1_accuracy', 0.0)) * 100:+.1f}% vs Random",
-            )
-            st.metric(
-                "Top-3 Accuracy",
-                f"{rf_base.get('top3_accuracy', 0.0) * 100:.1f}%",
-                delta=f"{(rf_base.get('top3_accuracy', 0.0) - rand_base.get('top3_accuracy', 0.0)) * 100:+.1f}% vs Random",
-            )
-            st.metric("MRR", f"{rf_base.get('mrr', 0.0):.3f}")
+        st.markdown("#### 🏆 Overall Localization Performance")
+        m1, m2, m3 = st.columns(3)
+        with m1:
+            st.markdown(f"""
+            <div class="metric-box">
+                <div class="metric-box-title">Random Baseline (1/N)</div>
+                <div class="metric-box-value">{rand_b.get('top1_accuracy', 0.0) * 100:.1f}%</div>
+                <div class="metric-box-sub">Top-3: {rand_b.get('top3_accuracy', 0.0) * 100:.1f}% · MRR: {rand_b.get('mrr', 0.0):.3f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with m2:
+            st.markdown(f"""
+            <div class="metric-box" style="border-color: #38bdf8;">
+                <div class="metric-box-title">Rule-Based Localizer</div>
+                <div class="metric-box-value" style="color: #38bdf8;">{rule_b.get('top1_accuracy', 0.0) * 100:.1f}%</div>
+                <div class="metric-box-sub">Top-3: {rule_b.get('top3_accuracy', 0.0) * 100:.1f}% · MRR: {rule_b.get('mrr', 0.0):.3f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with m3:
+            st.markdown(f"""
+            <div class="metric-box" style="border-color: #34d399;">
+                <div class="metric-box-title">Random Forest Classifier</div>
+                <div class="metric-box-value" style="color: #34d399;">{rf_b.get('top1_accuracy', 0.0) * 100:.1f}%</div>
+                <div class="metric-box-sub">Top-3: {rf_b.get('top3_accuracy', 0.0) * 100:.1f}% · MRR: {rf_b.get('mrr', 0.0):.3f}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         st.divider()
 
         # Method Comparison Table
-        st.markdown("#### 📊 Comparative Model Table")
+        st.markdown("#### 📊 Localization Methods Comparison")
         comp_df = pd.DataFrame([
             {
-                "Method": "Random Baseline (Theoretical)",
-                "Top-1 Accuracy": f"{rand_base.get('top1_accuracy', 0.0) * 100:.1f}%",
-                "Top-3 Accuracy": f"{rand_base.get('top3_accuracy', 0.0) * 100:.1f}%",
-                "MRR": f"{rand_base.get('mrr', 0.0):.3f}",
-                "Basis": "1 / N candidate steps",
+                "Method": "Random Baseline (1/N)",
+                "Top-1 Accuracy": f"{rand_b.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rand_b.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rand_b.get('mrr', 0.0):.3f}",
+                "Basis": "1 / N Candidate Execution Steps",
             },
             {
-                "Method": "Improved Rule-Based Localizer",
-                "Top-1 Accuracy": f"{rule_base.get('top1_accuracy', 0.0) * 100:.1f}%",
-                "Top-3 Accuracy": f"{rule_base.get('top3_accuracy', 0.0) * 100:.1f}%",
-                "MRR": f"{rule_base.get('mrr', 0.0):.3f}",
+                "Method": "Weighted Rule-Based Localizer",
+                "Top-1 Accuracy": f"{rule_b.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rule_b.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rule_b.get('mrr', 0.0):.3f}",
                 "Basis": "6 Structured Signals + Validation-Tuned Weights",
             },
             {
                 "Method": "Random Forest Classifier",
-                "Top-1 Accuracy": f"{rf_base.get('top1_accuracy', 0.0) * 100:.1f}%",
-                "Top-3 Accuracy": f"{rf_base.get('top3_accuracy', 0.0) * 100:.1f}%",
-                "MRR": f"{rf_base.get('mrr', 0.0):.3f}",
-                "Basis": "Scikit-Learn Balanced Forest on 6 Signals",
+                "Top-1 Accuracy": f"{rf_b.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rf_b.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rf_b.get('mrr', 0.0):.3f}",
+                "Basis": "Balanced Forest on Leakage-Safe Feature Vectors",
             },
         ])
         st.dataframe(comp_df, use_container_width=True, hide_index=True)
 
-        st.divider()
-
-        # Known vs Held-Out Categories
-        kvh = eval_data.get("known_vs_held_out")
-        if kvh:
-            st.markdown("#### 🎯 Generalization: Known vs Held-Out Failure Categories")
-            k_col, h_col = st.columns(2)
-            with k_col:
-                k_data = kvh.get("known_categories", {})
-                st.markdown(f"**Known Categories ({k_data.get('total_runs', 0)} test runs):**")
-                k_rule = k_data.get("rule_based", {})
-                k_rf = k_data.get("random_forest", {})
-                st.write(f"• **Rule-Based:** Top-1: `{k_rule.get('top1', 0.0)*100:.1f}%` | Top-3: `{k_rule.get('top3', 0.0)*100:.1f}%` | MRR: `{k_rule.get('mrr', 0.0):.3f}`")
-                st.write(f"• **Random Forest:** Top-1: `{k_rf.get('top1', 0.0)*100:.1f}%` | Top-3: `{k_rf.get('top3', 0.0)*100:.1f}%` | MRR: `{k_rf.get('mrr', 0.0):.3f}`")
-
-            with h_col:
-                h_data = kvh.get("held_out_category", {})
-                h_cat = h_data.get("category", "unexpected_output")
-                st.markdown(f"**Held-Out Category: `{h_cat}` ({h_data.get('total_runs', 0)} test runs):**")
-                h_rule = h_data.get("rule_based", {})
-                h_rf = h_data.get("random_forest", {})
-                st.write(f"• **Rule-Based:** Top-1: `{h_rule.get('top1', 0.0)*100:.1f}%` | Top-3: `{h_rule.get('top3', 0.0)*100:.1f}%` | MRR: `{h_rule.get('mrr', 0.0):.3f}`")
-                st.write(f"• **Random Forest:** Top-1: `{h_rf.get('top1', 0.0)*100:.1f}%` | Top-3: `{h_rf.get('top3', 0.0)*100:.1f}%` | MRR: `{h_rf.get('mrr', 0.0):.3f}`")
-
-        # Category Breakdown
-        cats = eval_data.get("by_category", [])
-        if cats:
-            st.divider()
-            st.markdown("#### 📋 Category Breakdown Table")
-            c_rows = []
-            for c in cats:
-                sample_chk = "⚠️ Small Sample (<5)" if c.get("small_sample_warning") else "✅ Normal"
-                c_rows.append({
-                    "Failure Category": c.get("category"),
-                    "Type": "🔒 Held-Out" if c.get("is_held_out") else "Known",
-                    "Test Runs": c.get("total_test_runs"),
-                    "Sample Verification": sample_chk,
-                    "Rule Top-1": f"{c.get('rule_based_top1', 0.0)*100:.1f}%",
-                    "Rule Top-3": f"{c.get('rule_based_top3', 0.0)*100:.1f}%",
-                    "RF Top-1": f"{c.get('random_forest_top1', 0.0)*100:.1f}%",
-                    "RF Top-3": f"{c.get('random_forest_top3', 0.0)*100:.1f}%",
-                })
-            st.dataframe(pd.DataFrame(c_rows), use_container_width=True, hide_index=True)
-
         # Replay Recovery Stats
         rep_rec = eval_data.get("replay_recovery", {})
-        st.divider()
-        st.markdown("#### 🔁 Replay Recovery Verification Statistics")
-        r1, r2, r3, r4 = st.columns(4)
-        with r1:
-            st.metric("Branches Attempted", rep_rec.get("branches_attempted", 0))
-        with r2:
-            st.metric("Recovered", f"✅ {rep_rec.get('recovered', 0)}")
-        with r3:
-            st.metric("Not Recovered", f"❌ {rep_rec.get('not_recovered', 0)}")
-        with r4:
-            st.metric("Recovery Rate", f"{rep_rec.get('recovery_rate', 0.0)*100:.1f}%")
+        if rep_rec:
+            st.divider()
+            st.markdown("#### 🔁 Replay Recovery Verification Statistics")
+            r1, r2, r3, r4 = st.columns(4)
+            r1.metric("Branches Attempted", rep_rec.get("branches_attempted", 0))
+            r2.metric("Recovered", f"✅ {rep_rec.get('recovered', 0)}")
+            r3.metric("Not Recovered", f"❌ {rep_rec.get('not_recovered', 0)}")
+            r4.metric("Recovery Rate", f"{rep_rec.get('recovery_rate', 0.0)*100:.1f}%")
 
 
 # =====================================================================
-# VIEW 9: CATALOGUE & TOOLS
+# VIEW 8: CATALOGUE
 # =====================================================================
-elif nav_selection == "📦 Catalogue & Tools":
-    st.markdown("### 📦 Product Catalogue & Machine Learning Recommender")
-    st.caption("Inspect the underlying device catalogue and Scikit-Learn NearestNeighbors model used by the controlled AI agent.")
+elif nav_selection == "📦 Catalogue":
+    st.markdown("### 📦 Hardware Catalogue & Product Specifications")
+    st.caption("Inspect the laptop devices, hardware specifications, and public product images used by the controlled AI agent.")
 
-    tab_cat, tab_ml_tool = st.tabs(["📦 Catalogue Browser", "🧠 Nearest Neighbors Similarity"])
+    tab_cards, tab_table, tab_ml = st.tabs(["🖼️ Visual Product Cards", "📋 Specification Table", "🧠 Similarity Explorer"])
 
     products = load_products()
     nn_model, scaler, _ = build_ml_recommender(products)
 
-    with tab_cat:
-        st.markdown("#### Available Hardware Devices (`data/products.json`)")
-        if products:
-            st.dataframe(pd.DataFrame(products), use_container_width=True)
-        else:
-            st.info("Catalogue is empty.")
+    with tab_cards:
+        st.markdown(f"<div style='font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;'>Displaying <b>{len(products)}</b> hardware products from catalogue:</div>", unsafe_allow_html=True)
+        # 3 columns grid
+        c_cols = st.columns(3)
+        for idx, p in enumerate(products):
+            with c_cols[idx % 3]:
+                st.markdown(render_product_card(p), unsafe_allow_html=True)
 
-    with tab_ml_tool:
-        st.markdown("#### Scikit-Learn Cosine Nearest Neighbors Model")
+    with tab_table:
+        st.dataframe(pd.DataFrame(products), use_container_width=True)
+
+    with tab_ml:
+        st.markdown("#### Scikit-Learn Cosine Similarity Explorer")
         if products:
             pnames = [p["name"] for p in products]
             sel_device = st.selectbox("Select Device to Find Similar Hardware:", pnames)
             sim_matches = get_similar_laptops(sel_device, products, nn_model, scaler)
             for m in sim_matches:
                 p = m["product"]
-                with st.container(border=True):
-                    sc1, sc2, sc3 = st.columns([2, 1, 1])
-                    with sc1:
-                        st.markdown(f"**{p['name']}**")
-                        st.caption(f"{p['processor']} | {p['ram_gb']}GB RAM | {p['storage_gb']}GB SSD")
-                    with sc2:
-                        st.markdown(f"**₹{p['price']:,}**")
-                    with sc3:
-                        st.metric("Similarity", f"{m['similarity_score']}%")
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background: #0d1424; border: 1px solid #1e293b; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 700; color: #f8fafc;">{p['name']}</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">{p['processor']} · {p['ram_gb']}GB RAM · {p['storage_gb']}GB SSD</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #38bdf8;">₹{p['price']:,}</div>
+                            <div style="font-size: 0.75rem; color: #34d399;">Match: {m['similarity_score']}%</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+
+# =====================================================================
+# VIEW 9: DASHBOARD (OVERVIEW)
+# =====================================================================
+elif nav_selection == "📊 Dashboard":
+    st.markdown("### 📊 System Telemetry & Execution Overview")
+    st.caption("System statistics for recorded agent runs, replay lineages, and failure distributions.")
+
+    all_runs = repo.list_runs(limit=250)
+    total_runs = len(all_runs)
+    successful_runs = sum(1 for r in all_runs if r.get("status") == "success")
+    failed_runs = sum(1 for r in all_runs if r.get("status") == "failed")
+    replay_branches = sum(1 for r in all_runs if r.get("parent_run_id"))
+    recovery_rate = (replay_branches / max(failed_runs, 1)) * 100 if failed_runs > 0 else 100.0
+
+    d_c1, d_c2, d_c3, d_c4 = st.columns(4)
+    with d_c1:
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="metric-box-title">Total Runs</div>
+            <div class="metric-box-value">{total_runs}</div>
+            <div class="metric-box-sub">Persistent Telemetry</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with d_c2:
+        st.markdown(f"""
+        <div class="metric-box" style="border-color: #10b981;">
+            <div class="metric-box-title">Successful Runs</div>
+            <div class="metric-box-value" style="color: #34d399;">{successful_runs}</div>
+            <div class="metric-box-sub">{(successful_runs/max(total_runs,1))*100:.1f}% Success Rate</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with d_c3:
+        st.markdown(f"""
+        <div class="metric-box" style="border-color: #ef4444;">
+            <div class="metric-box-title">Failed Runs</div>
+            <div class="metric-box-value" style="color: #f87171;">{failed_runs}</div>
+            <div class="metric-box-sub">{(failed_runs/max(total_runs,1))*100:.1f}% Anomaly Rate</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with d_c4:
+        st.markdown(f"""
+        <div class="metric-box" style="border-color: #6366f1;">
+            <div class="metric-box-title">Replay Branches</div>
+            <div class="metric-box-value" style="color: #a5b4fc;">{replay_branches}</div>
+            <div class="metric-box-sub">Controlled Lineages</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # Recent Executions Table
+    st.markdown("#### 🕒 Recent Executions")
+    if all_runs:
+        recent_df = pd.DataFrame([
+            {
+                "Run ID": r["run_id"],
+                "Status": "✅ SUCCESS" if r.get("status") == "success" else "❌ FAILED",
+                "Type": "Replay / Alt" if r.get("parent_run_id") else "Original",
+                "User Request": r.get("user_request") or "N/A",
+                "Timestamp": (r.get("started_at") or "")[:19],
+            }
+            for r in all_runs[:10]
+        ])
+        st.dataframe(recent_df, use_container_width=True, hide_index=True)

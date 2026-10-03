@@ -9,7 +9,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 4,
-    "gaming_suitability": 4
+    "gaming_suitability": 4,
+    "image_url": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "Lenovo LOQ 15",
@@ -21,7 +22,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 4,
-    "gaming_suitability": 4
+    "gaming_suitability": 4,
+    "image_url": "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "HP Victus 15",
@@ -33,7 +35,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 3,
-    "gaming_suitability": 3
+    "gaming_suitability": 3,
+    "image_url": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "Acer Nitro V 15",
@@ -45,7 +48,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 4,
-    "gaming_suitability": 5
+    "gaming_suitability": 5,
+    "image_url": "https://images.unsplash.com/photo-1544731612-de7f96afe55f?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "Dell G15",
@@ -57,7 +61,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 4,
-    "gaming_suitability": 4
+    "gaming_suitability": 4,
+    "image_url": "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "Lenovo IdeaPad Slim 5",
@@ -69,7 +74,8 @@
     "dedicated_gpu": false,
     "category": "ultrabook",
     "programming_suitability": 4,
-    "gaming_suitability": 2
+    "gaming_suitability": 2,
+    "image_url": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "HP Pavilion Plus 14",
@@ -81,7 +87,8 @@
     "dedicated_gpu": false,
     "category": "ultrabook",
     "programming_suitability": 4,
-    "gaming_suitability": 2
+    "gaming_suitability": 2,
+    "image_url": "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "ASUS Vivobook 15",
@@ -93,7 +100,8 @@
     "dedicated_gpu": false,
     "category": "budget",
     "programming_suitability": 3,
-    "gaming_suitability": 1
+    "gaming_suitability": 1,
+    "image_url": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "MSI Katana 15",
@@ -105,7 +113,8 @@
     "dedicated_gpu": true,
     "category": "gaming",
     "programming_suitability": 5,
-    "gaming_suitability": 5
+    "gaming_suitability": 5,
+    "image_url": "https://images.unsplash.com/photo-1618424181497-157f25b6ddd5?auto=format&fit=crop&w=600&q=80"
   },
   {
     "name": "Acer Aspire Lite 14",
@@ -117,6 +126,7 @@
     "dedicated_gpu": false,
     "category": "budget",
     "programming_suitability": 2,
-    "gaming_suitability": 1
+    "gaming_suitability": 1,
+    "image_url": "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=600&q=80"
   }
 ]
