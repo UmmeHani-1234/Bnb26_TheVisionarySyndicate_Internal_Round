@@ -18,6 +18,7 @@ from uuid import UUID
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
+# pyrefly: ignore [missing-import]
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -48,12 +49,25 @@ _PROVIDER_ALIASES = {
     "google": "google_genai",
     "gemini": "google_genai",
     "google_genai": "google_genai",
+    "huggingface": "huggingface",
+    "hf": "huggingface",
     "openai": "openai",
     "anthropic": "anthropic",
 }
-_DEFAULT_MODELS = {"google_genai": "gemini-flash-latest"}
-_API_KEY_ENV = {"google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY")}
-_PACKAGE_HINT = {"google_genai": "langchain-google-genai", "openai": "langchain-openai", "anthropic": "langchain-anthropic"}
+_DEFAULT_MODELS = {
+    "google_genai": "gemini-flash-latest",
+    "huggingface": "meta-llama/Llama-3.1-8B-Instruct",
+}
+_API_KEY_ENV = {
+    "google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+    "huggingface": ("HF_TOKEN", "HUGGINGFACEHUB_API_TOKEN"),
+}
+_PACKAGE_HINT = {
+    "google_genai": "langchain-google-genai",
+    "huggingface": "langchain-huggingface",
+    "openai": "langchain-openai",
+    "anthropic": "langchain-anthropic",
+}
 
 
 def build_llm(
@@ -63,10 +77,11 @@ def build_llm(
 ) -> BaseChatModel:
     """Build the chat model from arguments or environment variables.
 
-    LLM_PROVIDER     default "google" (Gemini)
-    LLM_MODEL        default "gemini-2.5-flash" for google; required for other providers
-    LLM_TEMPERATURE  default 0 (reproducible runs)
-    GOOGLE_API_KEY   Gemini API key (GEMINI_API_KEY is also accepted)
+    LLM_PROVIDER     default "google" (Gemini) or "huggingface"
+    LLM_MODEL        model identifier (e.g. meta-llama/Llama-3.1-8B-Instruct)
+    LLM_TEMPERATURE  sampling temperature (reproducible runs)
+    GOOGLE_API_KEY   Gemini API key
+    HF_TOKEN         Hugging Face user access token
 
     Nothing outside this function needs to change to switch provider or model.
     """
@@ -92,7 +107,24 @@ def build_llm(
             raise ConfigError(
                 f"No API key found. Set {key_vars[0]} in your environment or .env file (see .env.example)."
             )
-        os.environ.setdefault(key_vars[0], found)  # the integration reads the first name
+        os.environ.setdefault(key_vars[0], found)
+
+    if lc_provider == "huggingface":
+        try:
+            from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+
+            token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
+            endpoint = HuggingFaceEndpoint(
+                repo_id=model_name,
+                huggingfacehub_api_token=token,
+                task="text-generation",
+                temperature=max(temperature or 0.01, 0.01),
+            )
+            return ChatHuggingFace(llm=endpoint)
+        except ImportError as exc:
+            raise ConfigError("Provider package missing. Install it with: pip install langchain-huggingface") from exc
+        except Exception as exc:
+            raise ConfigError(f"Could not create Hugging Face model '{model_name}': {exc}") from exc
 
     try:
         return init_chat_model(model_name, model_provider=lc_provider, temperature=temperature)
