@@ -16,11 +16,15 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
 from agent.agent import ConfigError, LaptopAgent
 from agent.events import EventType
+
+load_dotenv()
+
 
 # Page configuration
 st.set_page_config(
@@ -127,13 +131,6 @@ nn_model, scaler, _ = build_ml_recommender(products)
 
 # Sidebar
 with st.sidebar:
-    st.header("⚙️ Agent Controls")
-    has_api_key = bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"))
-    if has_api_key:
-        st.success("✅ Google Gemini API Key Active")
-    else:
-        st.error("❌ No API Key Found (set GOOGLE_API_KEY in .env)")
-
     st.subheader("💡 Quick Example Queries")
     presets = [
         "Find a laptop under ₹70,000 suitable for programming and gaming.",
