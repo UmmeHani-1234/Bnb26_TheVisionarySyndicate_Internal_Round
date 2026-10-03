@@ -1,0 +1,122 @@
+[
+  {
+    "name": "ASUS TUF Gaming F15",
+    "price": 68990,
+    "ram_gb": 16,
+    "storage_gb": 512,
+    "processor": "Intel Core i5-12500H",
+    "gpu": "NVIDIA GeForce RTX 3050 4GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 4,
+    "gaming_suitability": 4
+  },
+  {
+    "name": "Lenovo LOQ 15",
+    "price": 67990,
+    "ram_gb": 16,
+    "storage_gb": 512,
+    "processor": "AMD Ryzen 5 7640HS",
+    "gpu": "NVIDIA GeForce RTX 3050 6GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 4,
+    "gaming_suitability": 4
+  },
+  {
+    "name": "HP Victus 15",
+    "price": 64990,
+    "ram_gb": 8,
+    "storage_gb": 512,
+    "processor": "AMD Ryzen 5 5600H",
+    "gpu": "NVIDIA GeForce GTX 1650 4GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 3,
+    "gaming_suitability": 3
+  },
+  {
+    "name": "Acer Nitro V 15",
+    "price": 69990,
+    "ram_gb": 16,
+    "storage_gb": 512,
+    "processor": "Intel Core i5-13420H",
+    "gpu": "NVIDIA GeForce RTX 4050 6GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 4,
+    "gaming_suitability": 5
+  },
+  {
+    "name": "Dell G15",
+    "price": 74990,
+    "ram_gb": 16,
+    "storage_gb": 512,
+    "processor": "AMD Ryzen 5 6600H",
+    "gpu": "NVIDIA GeForce RTX 3050 6GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 4,
+    "gaming_suitability": 4
+  },
+  {
+    "name": "Lenovo IdeaPad Slim 5",
+    "price": 58990,
+    "ram_gb": 16,
+    "storage_gb": 512,
+    "processor": "AMD Ryzen 7 7730U",
+    "gpu": "Integrated AMD Radeon Graphics",
+    "dedicated_gpu": false,
+    "category": "ultrabook",
+    "programming_suitability": 4,
+    "gaming_suitability": 2
+  },
+  {
+    "name": "HP Pavilion Plus 14",
+    "price": 79990,
+    "ram_gb": 16,
+    "storage_gb": 1024,
+    "processor": "Intel Core i5-13500H",
+    "gpu": "Intel Iris Xe Graphics",
+    "dedicated_gpu": false,
+    "category": "ultrabook",
+    "programming_suitability": 4,
+    "gaming_suitability": 2
+  },
+  {
+    "name": "ASUS Vivobook 15",
+    "price": 42990,
+    "ram_gb": 8,
+    "storage_gb": 512,
+    "processor": "Intel Core i5-1235U",
+    "gpu": "Intel Iris Xe Graphics",
+    "dedicated_gpu": false,
+    "category": "budget",
+    "programming_suitability": 3,
+    "gaming_suitability": 1
+  },
+  {
+    "name": "MSI Katana 15",
+    "price": 89990,
+    "ram_gb": 16,
+    "storage_gb": 1024,
+    "processor": "Intel Core i7-13620H",
+    "gpu": "NVIDIA GeForce RTX 4060 8GB",
+    "dedicated_gpu": true,
+    "category": "gaming",
+    "programming_suitability": 5,
+    "gaming_suitability": 5
+  },
+  {
+    "name": "Acer Aspire Lite 14",
+    "price": 34990,
+    "ram_gb": 8,
+    "storage_gb": 256,
+    "processor": "AMD Ryzen 5 5500U",
+    "gpu": "Integrated AMD Radeon Graphics",
+    "dedicated_gpu": false,
+    "category": "budget",
+    "programming_suitability": 2,
+    "gaming_suitability": 1
+  }
+]
