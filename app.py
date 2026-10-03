@@ -250,11 +250,10 @@ def clean_html(html_str: str) -> str:
     return "\n".join(lines)
 
 # --------------------------------------------------------------------------- Database & Services
-from storage.database import get_database_url
 init_db()
 repo = TraceRepository()
 fi_service = FailureIntelligenceService(repository=repo)
-DATA_PATH = Path(__file__).resolve().parent / "data" / "products.json"
+DATA_PATH = Path("data/products.json")
 
 STAGE_NAMES = {
     1: "Request Understanding",
@@ -333,8 +332,8 @@ NAV_PAGES = [
     "📊 Dashboard",
 ]
 
-if "main_nav_selection" not in st.session_state:
-    st.session_state["main_nav_selection"] = "💬 Chat"
+if "current_nav" not in st.session_state:
+    st.session_state["current_nav"] = "💬 Chat"
 
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
@@ -343,8 +342,12 @@ if "active_run_id" not in st.session_state:
     st.session_state["active_run_id"] = None
 
 
+def _on_sidebar_nav_change():
+    st.session_state["current_nav"] = st.session_state.get("sidebar_radio_selection", "💬 Chat")
+
+
 def set_nav(target_page: str, run_id: Optional[str] = None):
-    st.session_state["main_nav_selection"] = target_page
+    st.session_state["current_nav"] = target_page
     if run_id:
         st.session_state["active_run_id"] = run_id
     st.rerun()
@@ -362,12 +365,16 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    nav_selection = st.radio(
+    cur_nav_idx = NAV_PAGES.index(st.session_state["current_nav"]) if st.session_state["current_nav"] in NAV_PAGES else 0
+    st.radio(
         "Navigation Menu:",
         NAV_PAGES,
-        key="main_nav_selection",
+        index=cur_nav_idx,
+        key="sidebar_radio_selection",
+        on_change=_on_sidebar_nav_change,
         label_visibility="collapsed",
     )
+    nav_selection = st.session_state["current_nav"]
 
     st.divider()
 
@@ -397,10 +404,7 @@ with st.sidebar:
     st.divider()
 
     # Telemetry Footer
-    raw_api_url = os.getenv("BACKEND_URL") or f":{os.getenv('API_PORT', '8000')}"
-    db_type_label = "PostgreSQL" if "postgresql" in get_database_url() else "SQLite / TraceRepo"
-
-    st.markdown(clean_html(f"""
+    st.markdown("""
     <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.6;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>System Status:</span>
@@ -408,7 +412,7 @@ with st.sidebar:
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>Backend API:</span>
-            <span style="color: #38bdf8; font-family: monospace;">{raw_api_url}</span>
+            <span style="color: #38bdf8; font-family: monospace;">:8000</span>
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span>Active Agent:</span>
@@ -416,10 +420,10 @@ with st.sidebar:
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <span>Storage:</span>
-            <span style="color: #94a3b8; font-family: monospace;">{db_type_label}</span>
+            <span style="color: #94a3b8; font-family: monospace;">SQLite / TraceRepo</span>
         </div>
     </div>
-    """), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- Header Banner
