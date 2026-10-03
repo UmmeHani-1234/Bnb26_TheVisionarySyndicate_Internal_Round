@@ -253,3 +253,113 @@ def get_checkpoint(checkpoint_id: str, repo: TraceRepository = Depends(get_repo)
     if not cp:
         raise HTTPException(status_code=404, detail=f"Checkpoint '{checkpoint_id}' not found.")
     return cp.to_dict()
+
+
+# --------------------------------------------------------------------------- Stage 6: Evaluation & Trace Comparison APIs
+
+
+@router.get("/runs/{run_id}/evidence")
+def get_run_evidence(run_id: str, repo: TraceRepository = Depends(get_repo)):
+    """GET /runs/{run_id}/evidence: Returns structured, observable evidence packet for run failure."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    try:
+        return service.diagnose_run(run_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Evidence extraction failed: {exc}")
+
+
+@router.get("/runs/{run_id}/compare/{alternative_run_id}")
+def compare_run_traces(
+    run_id: str,
+    alternative_run_id: str,
+    reference_run_id: Optional[str] = None,
+    repo: TraceRepository = Depends(get_repo),
+):
+    """GET /runs/{run_id}/compare/{alternative_run_id}:
+
+    Performs 3-way trace alignment across original run, alternative/replay run,
+    and a verified successful reference run. Checks recovery with the Independent Verifier.
+    """
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    try:
+        return service.compare_traces(
+            original_run_id=run_id,
+            alternative_run_id=alternative_run_id,
+            reference_run_id=reference_run_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Trace comparison failed: {exc}")
+
+
+@router.get("/evaluation/summary")
+def get_evaluation_summary(repo: TraceRepository = Depends(get_repo)):
+    """GET /evaluation/summary: Returns Top-1, Top-3, and MRR for Random Baseline, Rule-based, and RF."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    return service.get_evaluation_summary()
+
+
+@router.get("/evaluation/localization")
+def get_evaluation_localization(repo: TraceRepository = Depends(get_repo)):
+    """GET /evaluation/localization: Returns localization accuracy comparisons and known vs held-out metrics."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    return service.get_evaluation_localization()
+
+
+@router.get("/evaluation/by-category")
+def get_evaluation_by_category(repo: TraceRepository = Depends(get_repo)):
+    """GET /evaluation/by-category: Returns Top-1 and Top-3 accuracy per failure category."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    return service.get_evaluation_by_category()
+
+
+@router.get("/evaluation/comparison")
+def get_evaluation_method_comparison(repo: TraceRepository = Depends(get_repo)):
+    """GET /evaluation/comparison: Compares Random, Rule-based, and Random Forest models side-by-side."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    summary = service.get_evaluation_summary()
+    return {
+        "status": summary.get("status"),
+        "comparison": summary.get("summary", {}),
+    }
+
+
+@router.get("/evaluation/replay")
+def get_evaluation_replay(repo: TraceRepository = Depends(get_repo)):
+    """GET /evaluation/replay: Returns branches attempted, recovered, not recovered, and recovery rate."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    return service.get_evaluation_replay()
+
+
+class BenchmarkRunRequest(BaseModel):
+    target_success: Optional[int] = Field(default=20, description="Target successful runs")
+    target_failure: Optional[int] = Field(default=40, description="Target failed runs across categories")
+    force_regenerate: Optional[bool] = Field(default=True, description="Force re-generation of dataset")
+
+
+@router.post("/evaluation/run-benchmark")
+def run_evaluation_benchmark(body: Optional[BenchmarkRunRequest] = None, repo: TraceRepository = Depends(get_repo)):
+    """POST /evaluation/run-benchmark: Generates benchmark runs and runs complete leakage-safe evaluation."""
+    from failure_intelligence.service import FailureIntelligenceService
+    service = FailureIntelligenceService(repository=repo)
+    req = body or BenchmarkRunRequest()
+    try:
+        eval_res = service.get_or_run_benchmark(
+            force_regenerate=req.force_regenerate,
+            target_success_count=req.target_success or 20,
+            target_failure_count=req.target_failure or 40,
+        )
+        return eval_res
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Benchmark evaluation failed: {exc}")
+

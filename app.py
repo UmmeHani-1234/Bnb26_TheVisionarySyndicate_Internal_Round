@@ -135,9 +135,10 @@ with st.sidebar:
 
 
 # --------------------------------------------------------------------------- Tabs
-tab_agent, tab_debug, tab_ml, tab_catalog = st.tabs([
+tab_agent, tab_debug, tab_stage6, tab_ml, tab_catalog = st.tabs([
     "🤖 Agent Execution",
     "🔬 Trace Debugger (Stage 5)",
+    "📊 Evaluation & Trace Comparison (Stage 6)",
     "🧠 ML Recommender",
     "📦 Catalogue",
 ])
@@ -424,7 +425,262 @@ with tab_debug:
                 st.write(f"{status_icon} **`{rr['run_id']}`** — {rr['status']} — Checkpoint: `{rm.get('checkpoint_id', 'N/A')}`")
 
 
-# =====================================================================  TAB 3: ML Recommender
+# =====================================================================  TAB 3: Stage 6 Evaluation & Trace Comparison
+with tab_stage6:
+    st.subheader("📊 Failure Intelligence Upgrade, Trace Comparison & Evaluation (Stage 6)")
+    st.caption("Benchmark evaluation across leakage-safe splits · Random Baseline · Rule-Based vs Random Forest · 3-Way Trace Comparison")
+
+    from failure_intelligence.service import FailureIntelligenceService
+    repo_eval = TraceRepository()
+    fi_service = FailureIntelligenceService(repository=repo_eval)
+
+    # ---------------- Benchmark Controls
+    with st.expander("⚙️ Benchmark Generation & Evaluation Controls", expanded=True):
+        c_ctrl1, c_ctrl2, c_ctrl3 = st.columns([2, 1, 1])
+        with c_ctrl1:
+            st.write("**Generate Controlled Evaluation Dataset & Evaluate Models**")
+            st.caption("Generates controlled runs across scenarios and evaluates Top-1, Top-3, and MRR using strict train/val/test/held-out splits.")
+        with c_ctrl2:
+            num_success = st.number_input("Target Success Runs", min_value=10, max_value=60, value=20, step=5)
+            num_failure = st.number_input("Target Failure Runs", min_value=20, max_value=120, value=40, step=10)
+        with c_ctrl3:
+            run_eval_btn = st.button("⚡ Run Benchmark Evaluation", type="primary", use_container_width=True)
+
+    if run_eval_btn:
+        with st.spinner("Generating controlled runs and computing leakage-safe benchmark evaluation..."):
+            try:
+                eval_data = fi_service.get_or_run_benchmark(
+                    force_regenerate=True,
+                    target_success_count=int(num_success),
+                    target_failure_count=int(num_failure),
+                )
+                st.session_state["stage6_eval_data"] = eval_data
+                st.success("✅ Benchmark evaluation completed successfully!")
+            except Exception as exc:
+                st.error(f"Benchmark error: {exc}")
+
+    eval_data = st.session_state.get("stage6_eval_data")
+    if not eval_data:
+        eval_data = fi_service.get_evaluation_summary()
+
+    if eval_data.get("status") == "evaluation_not_ready":
+        st.info("ℹ️ " + eval_data.get("reason", "Evaluation benchmark has not been run yet. Click 'Run Benchmark Evaluation' above."))
+    elif eval_data.get("summary"):
+        summ = eval_data["summary"]
+        rand_base = summ.get("random_baseline", {})
+        rule_base = summ.get("rule_based", {})
+        rf_base = summ.get("random_forest", {})
+
+        st.markdown("### 🏆 Localization Performance Summary")
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.markdown("#### 🎲 Random Baseline")
+            st.metric("Top-1 Accuracy", f"{rand_base.get('top1_accuracy', 0.0) * 100:.1f}%")
+            st.metric("Top-3 Accuracy", f"{rand_base.get('top3_accuracy', 0.0) * 100:.1f}%")
+            st.metric("MRR", f"{rand_base.get('mrr', 0.0):.3f}")
+
+        with col_m2:
+            st.markdown("#### 📐 Rule-Based Model")
+            st.metric(
+                "Top-1 Accuracy",
+                f"{rule_base.get('top1_accuracy', 0.0) * 100:.1f}%",
+                delta=f"{(rule_base.get('top1_accuracy', 0.0) - rand_base.get('top1_accuracy', 0.0)) * 100:+.1f}% vs Random",
+            )
+            st.metric(
+                "Top-3 Accuracy",
+                f"{rule_base.get('top3_accuracy', 0.0) * 100:.1f}%",
+                delta=f"{(rule_base.get('top3_accuracy', 0.0) - rand_base.get('top3_accuracy', 0.0)) * 100:+.1f}% vs Random",
+            )
+            st.metric("MRR", f"{rule_base.get('mrr', 0.0):.3f}")
+
+        with col_m3:
+            st.markdown("#### 🌲 Random Forest")
+            st.metric(
+                "Top-1 Accuracy",
+                f"{rf_base.get('top1_accuracy', 0.0) * 100:.1f}%",
+                delta=f"{(rf_base.get('top1_accuracy', 0.0) - rand_base.get('top1_accuracy', 0.0)) * 100:+.1f}% vs Random",
+            )
+            st.metric(
+                "Top-3 Accuracy",
+                f"{rf_base.get('top3_accuracy', 0.0) * 100:.1f}%",
+                delta=f"{(rf_base.get('top3_accuracy', 0.0) - rand_base.get('top3_accuracy', 0.0)) * 100:+.1f}% vs Random",
+            )
+            st.metric("MRR", f"{rf_base.get('mrr', 0.0):.3f}")
+
+        # Method Comparison Table
+        st.markdown("### 📊 Method Comparison")
+        comp_df = pd.DataFrame([
+            {
+                "Method": "Random Baseline (Theoretical)",
+                "Top-1 Accuracy": f"{rand_base.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rand_base.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rand_base.get('mrr', 0.0):.3f}",
+                "Evaluation Basis": "1 / N candidate steps",
+            },
+            {
+                "Method": "Improved Rule-Based Localizer",
+                "Top-1 Accuracy": f"{rule_base.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rule_base.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rule_base.get('mrr', 0.0):.3f}",
+                "Evaluation Basis": "6 Structured Signals + Validation-Tuned Weights",
+            },
+            {
+                "Method": "Random Forest Classifier",
+                "Top-1 Accuracy": f"{rf_base.get('top1_accuracy', 0.0) * 100:.1f}%",
+                "Top-3 Accuracy": f"{rf_base.get('top3_accuracy', 0.0) * 100:.1f}%",
+                "MRR": f"{rf_base.get('mrr', 0.0):.3f}",
+                "Evaluation Basis": "Scikit-Learn Balanced Forest on 6 Signals",
+            },
+        ])
+        st.dataframe(comp_df, use_container_width=True, hide_index=True)
+
+        # Known vs Held-Out Categories
+        kvh = eval_data.get("known_vs_held_out")
+        if kvh:
+            st.markdown("### 🎯 Known Categories vs Held-Out Category")
+            col_k, col_h = st.columns(2)
+            with col_k:
+                k_data = kvh.get("known_categories", {})
+                st.markdown(f"#### 🏷️ Known Categories ({k_data.get('total_runs', 0)} test runs)")
+                k_rule = k_data.get("rule_based", {})
+                k_rf = k_data.get("random_forest", {})
+                st.write(f"• **Rule-Based:** Top-1: `{k_rule.get('top1', 0.0)*100:.1f}%` | Top-3: `{k_rule.get('top3', 0.0)*100:.1f}%` | MRR: `{k_rule.get('mrr', 0.0):.3f}`")
+                st.write(f"• **Random Forest:** Top-1: `{k_rf.get('top1', 0.0)*100:.1f}%` | Top-3: `{k_rf.get('top3', 0.0)*100:.1f}%` | MRR: `{k_rf.get('mrr', 0.0):.3f}`")
+
+            with col_h:
+                h_data = kvh.get("held_out_category", {})
+                h_cat = h_data.get("category", "Held-Out")
+                st.markdown(f"#### 🔒 Held-Out Category: `{h_cat}` ({h_data.get('total_runs', 0)} test runs)")
+                h_rule = h_data.get("rule_based", {})
+                h_rf = h_data.get("random_forest", {})
+                st.write(f"• **Rule-Based:** Top-1: `{h_rule.get('top1', 0.0)*100:.1f}%` | Top-3: `{h_rule.get('top3', 0.0)*100:.1f}%` | MRR: `{h_rule.get('mrr', 0.0):.3f}`")
+                st.write(f"• **Random Forest:** Top-1: `{h_rf.get('top1', 0.0)*100:.1f}%` | Top-3: `{h_rf.get('top3', 0.0)*100:.1f}%` | MRR: `{h_rf.get('mrr', 0.0):.3f}`")
+
+        # Category Breakdown
+        cats = eval_data.get("by_category", [])
+        if cats:
+            st.markdown("### 📋 Failure Category Breakdown")
+            cat_rows = []
+            for c in cats:
+                sample_badge = "⚠️ Small Sample (<5)" if c.get("small_sample_warning") else "✅ Normal"
+                cat_rows.append({
+                    "Failure Category": c.get("category"),
+                    "Type": "🔒 Held-Out" if c.get("is_held_out") else "Known",
+                    "Test Runs": c.get("total_test_runs"),
+                    "Sample Check": sample_badge,
+                    "Rule Top-1": f"{c.get('rule_based_top1', 0.0)*100:.1f}%",
+                    "Rule Top-3": f"{c.get('rule_based_top3', 0.0)*100:.1f}%",
+                    "RF Top-1": f"{c.get('random_forest_top1', 0.0)*100:.1f}%",
+                    "RF Top-3": f"{c.get('random_forest_top3', 0.0)*100:.1f}%",
+                })
+            st.dataframe(pd.DataFrame(cat_rows), use_container_width=True, hide_index=True)
+
+        # Replay Recovery
+        rep_rec = eval_data.get("replay_recovery", {})
+        st.markdown("### 🔁 Replay Recovery Verification")
+        c_r1, c_r2, c_r3, c_r4 = st.columns(4)
+        with c_r1:
+            st.metric("Branches Attempted", rep_rec.get("branches_attempted", 0))
+        with c_r2:
+            st.metric("Recovered", f"✅ {rep_rec.get('recovered', 0)}")
+        with c_r3:
+            st.metric("Not Recovered", f"❌ {rep_rec.get('not_recovered', 0)}")
+        with c_r4:
+            st.metric("Recovery Rate", f"{rep_rec.get('recovery_rate', 0.0)*100:.1f}%")
+
+    st.divider()
+
+    # ---------------- 3-Way Trace Comparator
+    st.markdown("### 🔍 3-Way Trace Comparator (Original vs Alternative vs Reference)")
+    st.caption("Aligns execution steps across Original, Alternative, and Verified Reference runs to observe intermediate divergence and recovery.")
+
+    all_db_runs = repo_eval.list_runs(limit=60)
+    failed_runs = [r for r in all_db_runs if r.get("status") == "failed"]
+    all_run_ids = [r["run_id"] for r in all_db_runs]
+
+    if not all_run_ids:
+        st.info("No runs available in storage to compare.")
+    else:
+        col_sel1, col_sel2, col_sel3 = st.columns(3)
+        with col_sel1:
+            orig_choice = st.selectbox(
+                "Original Run (Failed)",
+                [r["run_id"] for r in failed_runs] if failed_runs else all_run_ids,
+                key="tc_orig_select",
+            )
+        with col_sel2:
+            # Prefer replays of original run
+            possible_alts = [r["run_id"] for r in all_db_runs if r.get("parent_run_id") == orig_choice]
+            if not possible_alts:
+                possible_alts = [r for r in all_run_ids if r != orig_choice]
+            alt_choice = st.selectbox(
+                "Alternative Run (Replay)",
+                possible_alts if possible_alts else all_run_ids,
+                key="tc_alt_select",
+            )
+        with col_sel3:
+            succ_runs = [r["run_id"] for r in all_db_runs if r.get("status") == "success"]
+            ref_opts = ["(Auto-Select Compatible Reference)"] + succ_runs
+            ref_choice = st.selectbox("Reference Run", ref_opts, key="tc_ref_select")
+
+        compare_btn = st.button("⚖️ Compare Executions Side-by-Side", type="secondary", use_container_width=True)
+
+        if compare_btn and orig_choice and alt_choice:
+            ref_id_arg = None if ref_choice.startswith("(") else ref_choice
+            try:
+                comp_result = fi_service.compare_traces(
+                    original_run_id=orig_choice,
+                    alternative_run_id=alt_choice,
+                    reference_run_id=ref_id_arg,
+                )
+
+                st.markdown("#### 🔬 Recovery Verification")
+                c_ver1, c_ver2, c_badge = st.columns([2, 2, 2])
+                with c_ver1:
+                    v_orig = comp_result.get("original_verifier", {})
+                    if v_orig.get("passed"):
+                        st.success("Original Verifier: ✅ PASSED")
+                    else:
+                        st.error(f"Original Verifier: ❌ {v_orig.get('reason', 'Failed')}")
+                with c_ver2:
+                    v_alt = comp_result.get("alternative_verifier", {})
+                    if v_alt.get("passed"):
+                        st.success("Alternative Verifier: ✅ PASSED")
+                    else:
+                        st.error(f"Alternative Verifier: ❌ {v_alt.get('reason', 'Failed')}")
+                with c_badge:
+                    if comp_result.get("recovered"):
+                        st.balloons()
+                        st.success("🎉 **VERIFIED RECOVERED**\n\nOutcome restored!")
+                    else:
+                        st.warning("⚠️ **NOT RECOVERED**\n\nConstraints violated.")
+
+                if comp_result.get("downstream_effects"):
+                    st.markdown("#### 🌊 Downstream Observable Effects")
+                    for eff in comp_result["downstream_effects"]:
+                        st.write(f"• {eff}")
+
+                st.markdown("#### 📐 Aligned 3-Way Steps Table")
+                steps_data = []
+                for s in comp_result.get("steps", []):
+                    ch_badge = "🔄 YES" if s.get("is_changed") else "Identical"
+                    steps_data.append({
+                        "Step ID": s.get("step_id"),
+                        "Step Type": s.get("step_type"),
+                        "Original Step": f"{s.get('original_tool') or s.get('step_type')} ({s.get('original_status')})",
+                        "Alternative Step": f"{s.get('alternative_tool') or s.get('step_type')} ({s.get('alternative_status')})",
+                        "Reference Step": f"{s.get('reference_tool') or s.get('step_type')} ({s.get('reference_status')})",
+                        "Intervention / Changed?": ch_badge,
+                        "Change Summary": s.get("change_description"),
+                    })
+
+                st.dataframe(pd.DataFrame(steps_data), use_container_width=True, hide_index=True)
+
+            except Exception as exc:
+                st.error(f"Trace comparison error: {exc}")
+
+
+# =====================================================================  TAB 4: ML Recommender
 with tab_ml:
     st.subheader("🧠 Scikit-Learn Nearest Neighbors Laptop Similarity")
     st.write("Using Scikit-Learn's `StandardScaler` and `NearestNeighbors` (Cosine Distance).")
