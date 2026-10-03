@@ -41,19 +41,19 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --------------------------------------------------------------------------- Sleek Developer Theme CSS
+# --------------------------------------------------------------------------- Sleek Developer Theme CSS (Light Theme)
 st.markdown("""
 <style>
-/* Base Dark Theme Overrides */
+/* Base Light Theme Overrides */
 html, body, [data-testid="stAppViewContainer"] {
-    background-color: #080c14 !important;
-    color: #e2e8f0;
+    background-color: #FFFFFF !important;
+    color: #0F172A;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 [data-testid="stSidebar"] {
-    background-color: #060910 !important;
-    border-right: 1px solid #1a2233 !important;
+    background-color: #F8FAFC !important;
+    border-right: 1px solid #E2E8F0 !important;
 }
 
 /* Brand Header */
@@ -62,23 +62,23 @@ html, body, [data-testid="stAppViewContainer"] {
     align-items: center;
     justify-content: space-between;
     padding: 0.9rem 1.4rem;
-    background: #0d1424;
-    border-radius: 10px;
-    border: 1px solid #1e293b;
+    background: #F8FAFC;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
     margin-bottom: 1.5rem;
 }
 .bb-header-title {
-    font-size: 1.4rem;
-    font-weight: 800;
+    font-size: 1.35rem;
+    font-weight: 700;
     letter-spacing: -0.3px;
-    color: #38bdf8;
+    color: #2563EB;
     margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 .bb-header-subtitle {
-    color: #94a3b8;
+    color: #64748B;
     font-size: 0.85rem;
     margin-top: 0.2rem;
 }
@@ -89,37 +89,38 @@ html, body, [data-testid="stAppViewContainer"] {
     align-items: center;
     gap: 4px;
     padding: 0.22rem 0.65rem;
-    border-radius: 6px;
+    border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
-.badge-success { background: #064e3b; color: #34d399; border: 1px solid #059669; }
-.badge-failed { background: #450a0a; color: #f87171; border: 1px solid #dc2626; }
-.badge-suspicious { background: #451a03; color: #fbbf24; border: 1px solid #d97706; }
-.badge-replay { background: #1e1b4b; color: #a5b4fc; border: 1px solid #4f46e5; }
-.badge-alternative { background: #142838; color: #38bdf8; border: 1px solid #0284c7; }
-.badge-reference { background: #064e3b; color: #6ee7b7; border: 1px solid #047857; }
-.badge-neutral { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+.badge-success { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+.badge-failed { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+.badge-suspicious { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+.badge-replay { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+.badge-alternative { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.badge-reference { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+.badge-neutral { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
 
 /* Product Cards */
 .product-card {
-    background: #0e1626;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
     overflow: hidden;
     margin-bottom: 1rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .product-card:hover {
-    border-color: #38bdf8;
+    border-color: #2563EB;
 }
 .product-image-container {
     position: relative;
     height: 155px;
     overflow: hidden;
-    background: #070c18;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
 }
 .product-image {
     width: 100%;
@@ -130,27 +131,26 @@ html, body, [data-testid="stAppViewContainer"] {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: rgba(8, 12, 20, 0.88);
-    backdrop-filter: blur(4px);
-    color: #38bdf8;
+    background: #EFF6FF;
+    color: #2563EB;
     font-weight: 700;
     font-size: 0.85rem;
     padding: 3px 10px;
-    border-radius: 6px;
-    border: 1px solid #334155;
+    border-radius: 4px;
+    border: 1px solid #BFDBFE;
 }
 .product-cat-pill {
     position: absolute;
     top: 8px;
     left: 8px;
-    background: rgba(15, 23, 42, 0.88);
-    color: #e2e8f0;
+    background: #F1F5F9;
+    color: #475569;
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     padding: 3px 8px;
     border-radius: 4px;
-    border: 1px solid #334155;
+    border: 1px solid #CBD5E1;
 }
 .product-details {
     padding: 0.9rem;
@@ -158,50 +158,50 @@ html, body, [data-testid="stAppViewContainer"] {
 .product-name {
     font-weight: 700;
     font-size: 1.05rem;
-    color: #f8fafc;
+    color: #0F172A;
     margin-bottom: 0.4rem;
 }
 .spec-chip {
     display: inline-block;
-    background: #182238;
-    color: #cbd5e1;
+    background: #F1F5F9;
+    color: #475569;
     font-size: 0.73rem;
     padding: 2px 7px;
     border-radius: 4px;
     margin: 2px;
-    border: 1px solid #23314e;
+    border: 1px solid #E2E8F0;
 }
 
 /* Step Card */
 .step-card {
-    background: #0d1424;
-    border: 1px solid #1e293b;
-    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
     padding: 1rem;
     margin-bottom: 0.8rem;
-    transition: border-color 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 .step-card-suspicious {
-    border-left: 5px solid #f59e0b !important;
-    background: #14161f;
+    border-left: 4px solid #D97706 !important;
+    background: #FFFDF5;
 }
 .step-card-failed {
-    border-left: 5px solid #ef4444 !important;
-    background: #191218;
+    border-left: 4px solid #DC2626 !important;
+    background: #FFF5F5;
 }
 .step-card-success {
-    border-left: 5px solid #10b981 !important;
+    border-left: 4px solid #16A34A !important;
 }
 
 /* Chat Debugging Indicator */
 .chat-indicator-success {
     margin-top: 10px;
     padding: 8px 14px;
-    background: #06241b;
-    border: 1px solid #059669;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #34d399;
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #166534;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -209,36 +209,36 @@ html, body, [data-testid="stAppViewContainer"] {
 .chat-indicator-failed {
     margin-top: 10px;
     padding: 10px 14px;
-    background: #2a0e14;
-    border: 1px solid #dc2626;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #fca5a5;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    color: #991B1B;
 }
 
 /* Metric Tile */
 .metric-box {
-    background: #0d1424;
-    border: 1px solid #1e293b;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
     border-radius: 8px;
     padding: 1rem;
     text-align: center;
 }
 .metric-box-title {
-    font-size: 0.8rem;
-    color: #94a3b8;
+    font-size: 0.75rem;
+    color: #64748B;
     text-transform: uppercase;
     font-weight: 600;
     margin-bottom: 0.3rem;
 }
 .metric-box-value {
     font-size: 1.7rem;
-    font-weight: 800;
-    color: #f8fafc;
+    font-weight: 700;
+    color: #0F172A;
 }
 .metric-box-sub {
     font-size: 0.75rem;
-    color: #64748b;
+    color: #64748B;
     margin-top: 0.2rem;
 }
 </style>
@@ -359,8 +359,8 @@ with st.sidebar:
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.8rem;">
         <span style="font-size: 1.8rem;">⬛</span>
         <div>
-            <div style="font-weight: 800; font-size: 1.15rem; color: #f8fafc; letter-spacing: -0.3px;">BLACK BOX</div>
-            <div style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; text-transform: uppercase;">AI Agent Debugger</div>
+            <div style="font-weight: 800; font-size: 1.15rem; color: #0F172A; letter-spacing: -0.3px;">BLACK BOX</div>
+            <div style="font-size: 0.72rem; color: #2563EB; font-weight: 600; text-transform: uppercase;">AI Agent Debugger</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -382,7 +382,7 @@ with st.sidebar:
     all_runs_summary = repo.list_runs(limit=100)
     all_run_ids = [r["run_id"] for r in all_runs_summary]
 
-    st.markdown("<div style='font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;'>Selected Run Context</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.78rem; font-weight: 700; color: #64748B; text-transform: uppercase; margin-bottom: 4px;'>Selected Run Context</div>", unsafe_allow_html=True)
     if not all_run_ids:
         st.caption("No executions recorded yet.")
         active_run_id = None

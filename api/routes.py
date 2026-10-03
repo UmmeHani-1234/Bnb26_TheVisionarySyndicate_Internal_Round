@@ -363,3 +363,40 @@ def run_evaluation_benchmark(body: Optional[BenchmarkRunRequest] = None, repo: T
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Benchmark evaluation failed: {exc}")
 
+
+# --------------------------------------------------------------------------- System & Catalogue APIs
+
+
+@router.get("/catalogue")
+def get_product_catalogue():
+    """GET /catalogue: Returns full product catalogue from data/products.json."""
+    import json
+    from pathlib import Path
+    data_path = Path(__file__).resolve().parent.parent / "data" / "products.json"
+    if not data_path.exists():
+        raise HTTPException(status_code=404, detail="Catalogue file not found.")
+    try:
+        with open(data_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to read catalogue: {exc}")
+
+
+@router.get("/system/status")
+def get_system_status(repo: TraceRepository = Depends(get_repo)):
+    """GET /system/status: Health status for Agent, Backend, Database."""
+    try:
+        runs = repo.list_runs(limit=1)
+        db_status = "connected"
+    except Exception as exc:
+        db_status = f"error: {exc}"
+
+    return {
+        "status": "healthy",
+        "backend": "online",
+        "database": db_status,
+        "agent": "ready",
+        "version": "1.0.0",
+    }
+
