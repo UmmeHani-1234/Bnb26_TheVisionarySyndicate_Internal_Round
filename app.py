@@ -146,7 +146,7 @@ tab_agent, tab_debug, tab_ml, tab_catalog = st.tabs([
 # =====================================================================  TAB 1: Agent Run
 with tab_agent:
     st.subheader("Run the AI Agent")
-    user_query = st.text_input("Enter your laptop requirement:", value=selected_preset)
+    user_query = st.text_input("Enter your device or computing requirement (e.g. laptop, phone):", value=selected_preset)
     col1, col2, col3 = st.columns([1, 1, 5])
     with col1:
         run_btn = st.button("🚀 Run Agent", type="primary", use_container_width=True)

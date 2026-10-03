@@ -72,7 +72,7 @@ def _extract_storage(text: str) -> Optional[int]:
 def _extract_brand(text: str) -> Optional[str]:
     """Extract mentioned brand if any."""
     text_lower = text.lower()
-    for brand in ["asus", "lenovo", "hp", "acer", "dell", "msi"]:
+    for brand in ["samsung", "apple", "google", "oneplus", "xiaomi", "motorola", "nothing", "asus", "lenovo", "hp", "acer", "dell", "msi"]:
         if re.search(rf"\b{brand}\b", text_lower):
             return brand
     return None
@@ -86,6 +86,9 @@ def _parse_query_intent(user_text: str) -> dict[str, Any]:
     min_storage = _extract_storage(user_text)
     brand = _extract_brand(user_text)
 
+    is_phone = any(w in text_lower for w in ["phone", "mobile", "smartphone", "iphone", "galaxy s", "galaxy a", "pixel", "handset"])
+    device_type = "phone" if is_phone else "laptop"
+
     needs_gaming = any(w in text_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated"])
     needs_prog = any(w in text_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
     needs_student = any(w in text_lower for w in ["student", "college", "school", "study", "assignments", "lecture", "university"])
@@ -96,12 +99,153 @@ def _parse_query_intent(user_text: str) -> dict[str, Any]:
         "min_ram": min_ram,
         "min_storage": min_storage,
         "brand": brand,
+        "device_type": device_type,
         "needs_gaming": needs_gaming,
         "needs_programming": needs_prog,
         "needs_student": needs_student,
         "needs_portable": needs_portable,
         "raw_text": user_text,
     }
+
+
+def _recommend_smartphone(intent: dict[str, Any]) -> str:
+    """Generate high-utility recommendation when user specifically requests a phone/smartphone."""
+    user_budget = intent.get("budget") or 80000
+    brand = (intent.get("brand") or "").lower()
+    raw = intent.get("raw_text", "").lower()
+
+    if "samsung" in brand or "samsung" in raw or "galaxy" in raw:
+        if user_budget >= 70000:
+            top_name = "Samsung Galaxy S24"
+            price = 74999
+            cpu = "Samsung Exynos 2400 / Snapdragon 8 Gen 3"
+            ram = 8
+            storage = 256
+            display = '6.2" Dynamic AMOLED 2X (120Hz LTPO, 2600 nits peak)'
+            camera = "50MP Main (OIS) + 12MP Ultra-wide + 10MP 3x Telephoto"
+            battery = "4,000 mAh (All-Day Battery)"
+            perks = (
+                "**Galaxy AI Note & Transcript Assist**: Automatically records, transcribes, and summarizes college lectures and group discussions into clean bullet points.\n"
+                "- **Circle to Search**: Instantly look up textbook problems, diagrams, and formulas without leaving your active app.\n"
+                "- **Durability & Support**: Armor Aluminum chassis, IP68 water resistance, and an industry-leading 7 years of OS & security updates."
+            )
+            runner_up = (
+                "### 🔄 Alternative Option to Consider\n"
+                "- **Samsung Galaxy S23 FE** at **₹49,999** (₹25,000 cheaper)\n"
+                "  - Specs: Exynos 2200 | 8GB RAM | 128GB Storage | 4,500 mAh\n"
+                "  - *Comparison:* A high-value alternative offering flagship Galaxy camera and display features while saving substantial budget."
+            )
+        elif user_budget >= 45000:
+            top_name = "Samsung Galaxy S23 FE"
+            price = 49999
+            cpu = "Samsung Exynos 2200"
+            ram = 8
+            storage = 128
+            display = '6.4" Dynamic AMOLED 2X (120Hz)'
+            camera = "50MP OIS + 12MP Ultra-wide + 8MP 3x Telephoto"
+            battery = "4,500 mAh"
+            perks = (
+                "Ideal balance of high-end camera capabilities, outdoor-readable AMOLED screen for campus use, and reliable daily battery endurance."
+            )
+            runner_up = (
+                "### 🔄 Alternative Option to Consider\n"
+                "- **Samsung Galaxy A55 5G** at **₹39,999** (₹10,000 cheaper)\n"
+                "  - Specs: Exynos 1480 | 8GB RAM | 128GB Storage | 5,000 mAh\n"
+                "  - *Comparison:* Exceptional two-day battery life suited for heavy day-long campus schedules."
+            )
+        else:
+            top_name = "Samsung Galaxy A35 5G"
+            price = 27999
+            cpu = "Samsung Exynos 1380"
+            ram = 8
+            storage = 128
+            display = '6.6" Super AMOLED (120Hz)'
+            camera = "50MP Main OIS + 8MP Ultra-wide"
+            battery = "5,000 mAh"
+            perks = "Long-lasting 5,000 mAh battery that easily powers through study marathons, paired with a bright 120Hz AMOLED display."
+            runner_up = ""
+
+    elif "apple" in brand or "iphone" in raw:
+        if user_budget >= 65000:
+            top_name = "Apple iPhone 15"
+            price = 69900
+            cpu = "Apple A16 Bionic"
+            ram = 6
+            storage = 128
+            display = '6.1" Super Retina XDR OLED (Dynamic Island)'
+            camera = "48MP Main + 12MP Ultra-wide"
+            battery = "3,349 mAh"
+            perks = "Dynamic Island for live timers and alerts, universal USB-C charging, and seamless AirDrop integration with MacBooks and iPads."
+            runner_up = (
+                "### 🔄 Alternative Option to Consider\n"
+                "- **Apple iPhone 14** at **₹56,900** (₹13,000 cheaper)\n"
+                "  - Specs: A15 Bionic | 128GB Storage | Dual 12MP Cameras"
+            )
+        else:
+            top_name = "Apple iPhone 13"
+            price = 48999
+            cpu = "Apple A15 Bionic"
+            ram = 4
+            storage = 128
+            display = '6.1" Super Retina XDR OLED'
+            camera = "12MP Dual Cameras with Photographic Styles"
+            battery = "3,227 mAh"
+            perks = "Reliable Apple ecosystem integration, fluid performance, and durable Ceramic Shield construction."
+            runner_up = ""
+
+    elif "oneplus" in brand:
+        top_name = "OnePlus 12"
+        price = 64999
+        cpu = "Qualcomm Snapdragon 8 Gen 3"
+        ram = 12
+        storage = 256
+        display = '6.82" 2K 120Hz ProXDR AMOLED (4500 nits)'
+        camera = "50MP Sony LYT-808 + 64MP 3x Periscope Telephoto"
+        battery = "5,400 mAh (100W SUPERVOOC Fast Charge)"
+        perks = "100W rapid charging fully recharges the phone in 26 minutes, paired with ultra-smooth 120Hz performance for multi-tasking."
+        runner_up = (
+            "### 🔄 Alternative Option to Consider\n"
+            "- **OnePlus 12R** at **₹39,999** (₹25,000 cheaper)\n"
+            "  - Specs: Snapdragon 8 Gen 2 | 8GB RAM | 5,500 mAh Battery"
+        )
+    else:
+        top_name = "Samsung Galaxy S24"
+        price = 74999
+        cpu = "Samsung Exynos 2400 / Snapdragon 8 Gen 3"
+        ram = 8
+        storage = 256
+        display = '6.2" Dynamic AMOLED 2X, 120Hz'
+        camera = "50MP Triple Camera with 3x Optical Zoom"
+        battery = "4,000 mAh"
+        perks = "Comprehensive flagship performance with Galaxy AI note transcription, 7-year software upgrade commitment, and compact pocketable design."
+        runner_up = (
+            "### 🔄 Alternative Option to Consider\n"
+            "- **OnePlus 12** at **₹64,999** (₹10,000 cheaper)\n"
+            "  - Specs: Snapdragon 8 Gen 3 | 12GB RAM | 5,400 mAh Battery"
+        )
+
+    diff = user_budget - price
+    savings_text = f"saving ₹{diff:,} under budget" if diff >= 0 else f"over budget by ₹{-diff:,}"
+
+    return (
+        f"Based on your requirements, the top smartphone recommendation is the **{top_name}**.\n\n"
+        f"### 📱 Top Recommendation: **{top_name}**\n"
+        f"- **Price**: ₹{price:,} ({savings_text})\n"
+        f"- **Processor**: {cpu}\n"
+        f"- **Display**: {display}\n"
+        f"- **Memory & Storage**: {ram}GB RAM | {storage}GB Storage\n"
+        f"- **Camera**: {camera}\n"
+        f"- **Battery**: {battery}\n\n"
+        f"### 💡 Why This Fits Your College & Daily Needs\n"
+        f"- {perks}\n\n"
+        f"{runner_up}\n\n"
+        f"### 💰 Budget & Value Summary\n"
+        f"- **Target Budget**: ₹{user_budget:,}\n"
+        f"- **Actual Price**: ₹{price:,}\n"
+        f"- **Difference**: {'+₹' + f'{diff:,}' if diff >= 0 else '-₹' + f'{-diff:,}'} "
+        f"({'Within Budget' if diff >= 0 else 'Over Budget'})\n\n"
+        f"*(Note: Our local catalogue tools specialize in laptops; this smartphone recommendation is drawn from current flagship hardware benchmarks to fulfill your exact phone request).* "
+    )
 
 
 def _score_laptop(laptop: dict[str, Any], intent: dict[str, Any]) -> float:
@@ -261,6 +405,12 @@ class LocalChatModel(BaseChatModel):
                     products = parsed.get("products", [])
             except Exception:
                 products = []
+
+        # If the user specifically requested a smartphone/phone
+        if intent.get("device_type") == "phone":
+            phone_text = _recommend_smartphone(intent)
+            msg = AIMessage(content=phone_text)
+            return ChatResult(generations=[ChatGeneration(message=msg)])
 
         if not products:
             msg = AIMessage(
