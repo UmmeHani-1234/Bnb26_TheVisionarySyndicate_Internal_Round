@@ -29,11 +29,7 @@ class FailureIntelligenceService:
         self.extractor = FeatureExtractor()
         self.rule_localizer = WeightedRuleLocalizer(feature_extractor=self.extractor)
         self.rf_localizer = RandomForestLocalizer(feature_extractor=self.extractor)
-        self.evidence_builder = EvidenceBuilder(
-            rule_localizer=self.rule_localizer,
-            rf_localizer=self.rf_localizer,
-            ref_selector=self.ref_selector,
-        )
+        self.evidence_builder = EvidenceBuilder()
         self.comparator = TraceComparator(verifier=self.verifier)
         self.dataset_manager = DatasetManager(repository=self.repo, verifier=self.verifier)
         self.evaluator = BenchmarkEvaluator(
@@ -91,8 +87,21 @@ class FailureIntelligenceService:
         cand_refs = [t for t in cand_refs if t]
 
         ref_trace = self.ref_selector.select_reference(trace, cand_refs)
-        packet = self.evidence_builder.build_evidence(trace, ref_trace)
-        return packet.to_dict()
+        rule_res = self.rule_localizer.localize(trace, ref_trace)
+        packets = self.evidence_builder.build_evidence(
+            run_id=run_id,
+            ranked_steps=rule_res.ranked_steps,
+            target_trace=trace,
+            reference_trace=ref_trace,
+        )
+        return {
+            "run_id": run_id,
+            "method": "rule_based",
+            "evidence_packets": [p.to_dict() for p in packets],
+            "likely_failure_causing_step": packets[0].to_dict() if packets else None,
+            "top_candidates": [s.to_dict() for s in rule_res.ranked_steps[:3]],
+            "trace_facts": packets[0].trace_facts if packets else [],
+        }
 
     def get_or_run_benchmark(
         self,
