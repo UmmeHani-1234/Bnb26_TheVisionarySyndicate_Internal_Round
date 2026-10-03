@@ -108,127 +108,280 @@ def _parse_query_intent(user_text: str) -> dict[str, Any]:
     }
 
 
+SMARTPHONES = [
+    # Premium Flagships (>= 1,00,000)
+    {
+        "name": "Samsung Galaxy S24 Ultra",
+        "price": 129999,
+        "brand": "samsung",
+        "processor": "Qualcomm Snapdragon 8 Gen 3 for Galaxy",
+        "ram": 12,
+        "storage": 256,
+        "display": '6.8" Dynamic AMOLED 2X (1-120Hz LTPO, 2600 nits, Gorilla Armor)',
+        "camera": "200MP Quad Camera with 5x & 10x Optical Periscope Zoom, S-Pen",
+        "battery": "5,000 mAh (45W Fast Charging)",
+        "perks": "Built-in S-Pen for handwriting lecture notes and annotating PDFs on glass, Samsung DeX for desktop computing, and titanium frame durability.",
+    },
+    {
+        "name": "Apple iPhone 15 Pro",
+        "price": 124900,
+        "brand": "apple",
+        "processor": "Apple A17 Pro (3nm)",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.1" Super Retina XDR OLED (120Hz ProMotion)',
+        "camera": "48MP Main + 12MP Ultra-wide + 12MP 3x Telephoto",
+        "battery": "3,274 mAh",
+        "perks": "Grade 5 Titanium design, Action Button for instant shortcuts (voice recorder, flashcards), and console-grade A17 Pro graphics performance.",
+    },
+    # High-End Flagships (60,000 - 85,000)
+    {
+        "name": "Samsung Galaxy S24",
+        "price": 74999,
+        "brand": "samsung",
+        "processor": "Samsung Exynos 2400 / Snapdragon 8 Gen 3",
+        "ram": 8,
+        "storage": 256,
+        "display": '6.2" Dynamic AMOLED 2X (120Hz LTPO, 2600 nits peak)',
+        "camera": "50MP Main (OIS) + 12MP Ultra-wide + 10MP 3x Telephoto",
+        "battery": "4,000 mAh (All-Day Battery)",
+        "perks": "Galaxy AI Note & Transcript Assist for lecture recording, Circle to Search for textbook homework, compact pocketable design, and 7 years of OS updates.",
+    },
+    {
+        "name": "Apple iPhone 15",
+        "price": 69900,
+        "brand": "apple",
+        "processor": "Apple A16 Bionic",
+        "ram": 6,
+        "storage": 128,
+        "display": '6.1" Super Retina XDR OLED (Dynamic Island)',
+        "camera": "48MP Main + 12MP Ultra-wide",
+        "battery": "3,349 mAh",
+        "perks": "Dynamic Island for live timers and alerts, universal USB-C charging, and seamless AirDrop integration with MacBooks and iPads.",
+    },
+    {
+        "name": "OnePlus 12",
+        "price": 64999,
+        "brand": "oneplus",
+        "processor": "Qualcomm Snapdragon 8 Gen 3",
+        "ram": 12,
+        "storage": 256,
+        "display": '6.82" 2K 120Hz ProXDR AMOLED (4500 nits)',
+        "camera": "50MP Sony LYT-808 + 64MP 3x Periscope Telephoto",
+        "battery": "5,400 mAh (100W SUPERVOOC Fast Charge)",
+        "perks": "100W rapid charging fully recharges the phone in 26 minutes, paired with ultra-smooth 120Hz performance for multitasking.",
+    },
+    {
+        "name": "Google Pixel 8",
+        "price": 62999,
+        "brand": "google",
+        "processor": "Google Tensor G3",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.2" Actua OLED (120Hz, 2000 nits)',
+        "camera": "50MP Main + 12MP Ultra-wide",
+        "battery": "4,575 mAh",
+        "perks": "Best-in-class Google AI Recorder with speaker labels for lecture capture, Magic Eraser, and 7 years of direct Android feature drops.",
+    },
+    # Upper Midrange (40,000 - 55,000)
+    {
+        "name": "Samsung Galaxy S23 FE",
+        "price": 49999,
+        "brand": "samsung",
+        "processor": "Samsung Exynos 2200",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.4" Dynamic AMOLED 2X (120Hz)',
+        "camera": "50MP OIS + 12MP Ultra-wide + 8MP 3x Telephoto",
+        "battery": "4,500 mAh",
+        "perks": "Flagship camera array with optical 3x zoom, bright AMOLED screen for campus reading, and Galaxy AI features comfortably within budget.",
+    },
+    {
+        "name": "Apple iPhone 13",
+        "price": 48999,
+        "brand": "apple",
+        "processor": "Apple A15 Bionic",
+        "ram": 4,
+        "storage": 128,
+        "display": '6.1" Super Retina XDR OLED',
+        "camera": "12MP Dual Cameras with Photographic Styles",
+        "battery": "3,227 mAh",
+        "perks": "Reliable Apple ecosystem integration, fluid performance, and durable Ceramic Shield construction under ₹50,000.",
+    },
+    {
+        "name": "OnePlus 12R",
+        "price": 39999,
+        "brand": "oneplus",
+        "processor": "Qualcomm Snapdragon 8 Gen 2",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.78" 1.5K 120Hz LTPO4 AMOLED (4500 nits)',
+        "camera": "50MP Sony IMX890 OIS",
+        "battery": "5,500 mAh (100W SUPERVOOC)",
+        "perks": "Massive 5,500 mAh battery that easily lasts 1.5 days of classes, Snapdragon 8 Gen 2 flagship speed, and 100W charging.",
+    },
+    {
+        "name": "Samsung Galaxy A55 5G",
+        "price": 39999,
+        "brand": "samsung",
+        "processor": "Samsung Exynos 1480",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.6" Super AMOLED (120Hz, Gorilla Glass Victus+)',
+        "camera": "50MP OIS + 12MP Ultra-wide + 5MP Macro",
+        "battery": "5,000 mAh",
+        "perks": "Premium metal frame, IP67 dust/water resistance for college commutes, 4 OS updates, and exceptional 2-day battery endurance.",
+    },
+    {
+        "name": "Nothing Phone (2)",
+        "price": 36999,
+        "brand": "nothing",
+        "processor": "Qualcomm Snapdragon 8+ Gen 1",
+        "ram": 12,
+        "storage": 256,
+        "display": '6.7" LTPO OLED (120Hz)',
+        "camera": "50MP Sony IMX890 + 50MP Ultra-wide",
+        "battery": "4,700 mAh",
+        "perks": "Unique Glyph Interface for silent class notifications, clean bloatware-free Nothing OS, and snappy flagship processor.",
+    },
+    # Budget / Value Tier (20,000 - 35,000)
+    {
+        "name": "Samsung Galaxy A35 5G",
+        "price": 27999,
+        "brand": "samsung",
+        "processor": "Samsung Exynos 1380",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.6" Super AMOLED (120Hz)',
+        "camera": "50MP Main OIS + 8MP Ultra-wide",
+        "battery": "5,000 mAh",
+        "perks": "Long-lasting 5,000 mAh battery that easily powers through study marathons, paired with a bright 120Hz AMOLED display.",
+    },
+    {
+        "name": "OnePlus Nord CE4",
+        "price": 24999,
+        "brand": "oneplus",
+        "processor": "Qualcomm Snapdragon 7 Gen 3",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.7" Fluid AMOLED (120Hz)',
+        "camera": "50MP Sony LYT-600 OIS",
+        "battery": "5,500 mAh (100W SUPERVOOC)",
+        "perks": "Unbeatable battery endurance and 100W fast charging under ₹25,000, perfect for budget-conscious students.",
+    },
+    {
+        "name": "Redmi Note 13 Pro 5G",
+        "price": 24999,
+        "brand": "xiaomi",
+        "processor": "Qualcomm Snapdragon 7s Gen 2",
+        "ram": 8,
+        "storage": 128,
+        "display": '6.67" 1.5K AMOLED (120Hz)',
+        "camera": "200MP OIS Ultra-Clear Camera",
+        "battery": "5,100 mAh (67W Turbo Charge)",
+        "perks": "High-resolution 1.5K display for reading PDFs and textbooks with crystal-clear text, and 200MP camera.",
+    },
+    {
+        "name": "Samsung Galaxy M34 5G",
+        "price": 16999,
+        "brand": "samsung",
+        "processor": "Samsung Exynos 1280",
+        "ram": 6,
+        "storage": 128,
+        "display": '6.5" Super AMOLED (120Hz)',
+        "camera": "50MP OIS Main Camera",
+        "battery": "6,000 mAh",
+        "perks": "Monstrous 6,000 mAh battery that lasts up to 3 days without a charger, paired with Samsung Knox security.",
+    },
+]
+
+
 def _recommend_smartphone(intent: dict[str, Any]) -> str:
-    """Generate high-utility recommendation when user specifically requests a phone/smartphone."""
+    """Select and synthesize the best smartphone strictly respecting user budget and preferences."""
     user_budget = intent.get("budget") or 80000
     brand = (intent.get("brand") or "").lower()
     raw = intent.get("raw_text", "").lower()
 
-    if "samsung" in brand or "samsung" in raw or "galaxy" in raw:
-        if user_budget >= 70000:
-            top_name = "Samsung Galaxy S24"
-            price = 74999
-            cpu = "Samsung Exynos 2400 / Snapdragon 8 Gen 3"
-            ram = 8
-            storage = 256
-            display = '6.2" Dynamic AMOLED 2X (120Hz LTPO, 2600 nits peak)'
-            camera = "50MP Main (OIS) + 12MP Ultra-wide + 10MP 3x Telephoto"
-            battery = "4,000 mAh (All-Day Battery)"
-            perks = (
-                "**Galaxy AI Note & Transcript Assist**: Automatically records, transcribes, and summarizes college lectures and group discussions into clean bullet points.\n"
-                "- **Circle to Search**: Instantly look up textbook problems, diagrams, and formulas without leaving your active app.\n"
-                "- **Durability & Support**: Armor Aluminum chassis, IP68 water resistance, and an industry-leading 7 years of OS & security updates."
-            )
-            runner_up = (
-                "### 🔄 Alternative Option to Consider\n"
-                "- **Samsung Galaxy S23 FE** at **₹49,999** (₹25,000 cheaper)\n"
-                "  - Specs: Exynos 2200 | 8GB RAM | 128GB Storage | 4,500 mAh\n"
-                "  - *Comparison:* A high-value alternative offering flagship Galaxy camera and display features while saving substantial budget."
-            )
-        elif user_budget >= 45000:
-            top_name = "Samsung Galaxy S23 FE"
-            price = 49999
-            cpu = "Samsung Exynos 2200"
-            ram = 8
-            storage = 128
-            display = '6.4" Dynamic AMOLED 2X (120Hz)'
-            camera = "50MP OIS + 12MP Ultra-wide + 8MP 3x Telephoto"
-            battery = "4,500 mAh"
-            perks = (
-                "Ideal balance of high-end camera capabilities, outdoor-readable AMOLED screen for campus use, and reliable daily battery endurance."
-            )
-            runner_up = (
-                "### 🔄 Alternative Option to Consider\n"
-                "- **Samsung Galaxy A55 5G** at **₹39,999** (₹10,000 cheaper)\n"
-                "  - Specs: Exynos 1480 | 8GB RAM | 128GB Storage | 5,000 mAh\n"
-                "  - *Comparison:* Exceptional two-day battery life suited for heavy day-long campus schedules."
-            )
-        else:
-            top_name = "Samsung Galaxy A35 5G"
-            price = 27999
-            cpu = "Samsung Exynos 1380"
-            ram = 8
-            storage = 128
-            display = '6.6" Super AMOLED (120Hz)'
-            camera = "50MP Main OIS + 8MP Ultra-wide"
-            battery = "5,000 mAh"
-            perks = "Long-lasting 5,000 mAh battery that easily powers through study marathons, paired with a bright 120Hz AMOLED display."
-            runner_up = ""
+    candidates = SMARTPHONES
 
-    elif "apple" in brand or "iphone" in raw:
-        if user_budget >= 65000:
-            top_name = "Apple iPhone 15"
-            price = 69900
-            cpu = "Apple A16 Bionic"
-            ram = 6
-            storage = 128
-            display = '6.1" Super Retina XDR OLED (Dynamic Island)'
-            camera = "48MP Main + 12MP Ultra-wide"
-            battery = "3,349 mAh"
-            perks = "Dynamic Island for live timers and alerts, universal USB-C charging, and seamless AirDrop integration with MacBooks and iPads."
-            runner_up = (
-                "### 🔄 Alternative Option to Consider\n"
-                "- **Apple iPhone 14** at **₹56,900** (₹13,000 cheaper)\n"
-                "  - Specs: A15 Bionic | 128GB Storage | Dual 12MP Cameras"
-            )
-        else:
-            top_name = "Apple iPhone 13"
-            price = 48999
-            cpu = "Apple A15 Bionic"
-            ram = 4
-            storage = 128
-            display = '6.1" Super Retina XDR OLED'
-            camera = "12MP Dual Cameras with Photographic Styles"
-            battery = "3,227 mAh"
-            perks = "Reliable Apple ecosystem integration, fluid performance, and durable Ceramic Shield construction."
-            runner_up = ""
+    # 1. Filter by brand if specified
+    if brand:
+        brand_matches = [p for p in candidates if p["brand"] == brand]
+        if brand_matches:
+            candidates = brand_matches
+    elif "samsung" in raw or "galaxy" in raw:
+        brand_matches = [p for p in candidates if p["brand"] == "samsung"]
+        if brand_matches:
+            candidates = brand_matches
+    elif "iphone" in raw or "apple" in raw:
+        brand_matches = [p for p in candidates if p["brand"] == "apple"]
+        if brand_matches:
+            candidates = brand_matches
 
-    elif "oneplus" in brand:
-        top_name = "OnePlus 12"
-        price = 64999
-        cpu = "Qualcomm Snapdragon 8 Gen 3"
-        ram = 12
-        storage = 256
-        display = '6.82" 2K 120Hz ProXDR AMOLED (4500 nits)'
-        camera = "50MP Sony LYT-808 + 64MP 3x Periscope Telephoto"
-        battery = "5,400 mAh (100W SUPERVOOC Fast Charge)"
-        perks = "100W rapid charging fully recharges the phone in 26 minutes, paired with ultra-smooth 120Hz performance for multi-tasking."
-        runner_up = (
-            "### 🔄 Alternative Option to Consider\n"
-            "- **OnePlus 12R** at **₹39,999** (₹25,000 cheaper)\n"
-            "  - Specs: Snapdragon 8 Gen 2 | 8GB RAM | 5,500 mAh Battery"
-        )
+    # 2. Strict budget filtering: ALWAYS prioritize devices within user budget
+    within_budget = [p for p in candidates if p["price"] <= user_budget]
+    is_over_budget = False
+
+    if within_budget:
+        # Sort by price descending to get the best feature-packed device within the budget
+        within_budget.sort(key=lambda p: p["price"], reverse=True)
+        top = within_budget[0]
+        runner_up = within_budget[1] if len(within_budget) > 1 else None
     else:
-        top_name = "Samsung Galaxy S24"
-        price = 74999
-        cpu = "Samsung Exynos 2400 / Snapdragon 8 Gen 3"
-        ram = 8
-        storage = 256
-        display = '6.2" Dynamic AMOLED 2X, 120Hz'
-        camera = "50MP Triple Camera with 3x Optical Zoom"
-        battery = "4,000 mAh"
-        perks = "Comprehensive flagship performance with Galaxy AI note transcription, 7-year software upgrade commitment, and compact pocketable design."
-        runner_up = (
-            "### 🔄 Alternative Option to Consider\n"
-            "- **OnePlus 12** at **₹64,999** (₹10,000 cheaper)\n"
-            "  - Specs: Snapdragon 8 Gen 3 | 12GB RAM | 5,400 mAh Battery"
-        )
+        # No options under budget! Fall back to closest available and flag clearly
+        is_over_budget = True
+        candidates_sorted = sorted(candidates, key=lambda p: abs(p["price"] - user_budget))
+        top = candidates_sorted[0]
+        runner_up = candidates_sorted[1] if len(candidates_sorted) > 1 else None
+
+    price = top["price"]
+    top_name = top["name"]
+    cpu = top["processor"]
+    display = top["display"]
+    ram = top["ram"]
+    storage = top["storage"]
+    camera = top["camera"]
+    battery = top["battery"]
+    perks = top["perks"]
 
     diff = user_budget - price
-    savings_text = f"saving ₹{diff:,} under budget" if diff >= 0 else f"over budget by ₹{-diff:,}"
+    if diff >= 0:
+        savings_text = f"saving ₹{diff:,} under budget"
+        status_label = "Within Budget"
+        diff_str = f"+₹{diff:,}"
+    else:
+        savings_text = f"over budget by ₹{-diff:,}"
+        status_label = "Over Budget"
+        diff_str = f"-₹{-diff:,}"
+
+    # Runner-up alternative section
+    runner_up_section = ""
+    if runner_up:
+        r_name = runner_up["name"]
+        r_price = runner_up["price"]
+        r_diff = abs(price - r_price)
+        if r_price < price:
+            r_delta = f"₹{r_diff:,} cheaper"
+        else:
+            r_delta = f"₹{r_diff:,} more"
+
+        runner_up_section = (
+            f"### 🔄 Alternative Option to Consider\n"
+            f"- **{r_name}** at **₹{r_price:,}** ({r_delta})\n"
+            f"  - Specs: {runner_up['processor']} | {runner_up['ram']}GB RAM | {runner_up['storage']}GB Storage | {runner_up['battery']}\n"
+            f"  - *Comparison:* A solid option if you want to optimize your spend while maintaining dependable performance.\n\n"
+        )
+
+    notice = ""
+    if is_over_budget:
+        notice = (
+            f"> ⚠️ **Budget Notice**: No reliable smartphones matching your criteria were found strictly within "
+            f"₹{user_budget:,}. The **{top_name}** at ₹{price:,} is the closest available match in this category.\n\n"
+        )
 
     return (
         f"Based on your requirements, the top smartphone recommendation is the **{top_name}**.\n\n"
+        f"{notice}"
         f"### 📱 Top Recommendation: **{top_name}**\n"
         f"- **Price**: ₹{price:,} ({savings_text})\n"
         f"- **Processor**: {cpu}\n"
@@ -238,12 +391,11 @@ def _recommend_smartphone(intent: dict[str, Any]) -> str:
         f"- **Battery**: {battery}\n\n"
         f"### 💡 Why This Fits Your College & Daily Needs\n"
         f"- {perks}\n\n"
-        f"{runner_up}\n\n"
+        f"{runner_up_section}"
         f"### 💰 Budget & Value Summary\n"
         f"- **Target Budget**: ₹{user_budget:,}\n"
         f"- **Actual Price**: ₹{price:,}\n"
-        f"- **Difference**: {'+₹' + f'{diff:,}' if diff >= 0 else '-₹' + f'{-diff:,}'} "
-        f"({'Within Budget' if diff >= 0 else 'Over Budget'})\n\n"
+        f"- **Difference**: {diff_str} ({status_label})\n\n"
         f"*(Note: Our local catalogue tools specialize in laptops; this smartphone recommendation is drawn from current flagship hardware benchmarks to fulfill your exact phone request).* "
     )
 
