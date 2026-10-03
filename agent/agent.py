@@ -49,6 +49,7 @@ _PROVIDER_ALIASES = {
     "google": "google_genai",
     "gemini": "google_genai",
     "google_genai": "google_genai",
+    "groq": "groq",
     "huggingface": "huggingface",
     "hf": "huggingface",
     "openai": "openai",
@@ -61,16 +62,19 @@ _PROVIDER_ALIASES = {
 }
 _DEFAULT_MODELS = {
     "google_genai": "gemini-flash-latest",
+    "groq": "llama-3.3-70b-versatile",
     "huggingface": "meta-llama/Llama-3.1-8B-Instruct",
     "local": "blackbox-local-offline",
     "ollama": "llama3.2",
 }
 _API_KEY_ENV = {
     "google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+    "groq": ("GROQ_API_KEY",),
     "huggingface": ("HF_TOKEN", "HUGGINGFACEHUB_API_TOKEN"),
 }
 _PACKAGE_HINT = {
     "google_genai": "langchain-google-genai",
+    "groq": "langchain-groq",
     "huggingface": "langchain-huggingface",
     "openai": "langchain-openai",
     "anthropic": "langchain-anthropic",
@@ -129,6 +133,21 @@ def build_llm(
             base_url=base_url,
             temperature=temperature or 0.0,
         )
+
+    if lc_provider == "groq":
+        try:
+            from langchain_groq import ChatGroq
+
+            api_key = os.getenv("GROQ_API_KEY")
+            return ChatGroq(
+                model=model_name or "llama-3.3-70b-versatile",
+                groq_api_key=api_key,
+                temperature=temperature or 0.0,
+            )
+        except ImportError as exc:
+            raise ConfigError("Provider package missing. Install it with: pip install langchain-groq") from exc
+        except Exception as exc:
+            raise ConfigError(f"Could not create Groq model '{model_name}': {exc}") from exc
 
     if lc_provider == "huggingface":
         try:
