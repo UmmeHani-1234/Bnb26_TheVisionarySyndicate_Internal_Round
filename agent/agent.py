@@ -53,10 +53,17 @@ _PROVIDER_ALIASES = {
     "hf": "huggingface",
     "openai": "openai",
     "anthropic": "anthropic",
+    "local": "local",
+    "offline": "local",
+    "builtin": "local",
+    "mock": "local",
+    "ollama": "ollama",
 }
 _DEFAULT_MODELS = {
     "google_genai": "gemini-flash-latest",
     "huggingface": "meta-llama/Llama-3.1-8B-Instruct",
+    "local": "blackbox-local-offline",
+    "ollama": "llama3.2",
 }
 _API_KEY_ENV = {
     "google_genai": ("GOOGLE_API_KEY", "GEMINI_API_KEY"),
@@ -109,6 +116,19 @@ def build_llm(
                 f"No API key found. Set {key_vars[0]} in your environment or .env file (see .env.example)."
             )
         os.environ.setdefault(key_vars[0], found)
+
+    if lc_provider == "local":
+        from .local_model import LocalChatModel
+        return LocalChatModel()
+
+    if lc_provider == "ollama":
+        from .local_model import OllamaChatModel
+        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        return OllamaChatModel(
+            model=model_name or "llama3.2",
+            base_url=base_url,
+            temperature=temperature or 0.0,
+        )
 
     if lc_provider == "huggingface":
         try:
