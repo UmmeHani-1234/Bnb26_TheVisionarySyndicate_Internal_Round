@@ -50,14 +50,14 @@ def build_ml_recommender(products: List[Dict[str, Any]]):
 
     features = []
     for p in products:
-        # Vector: [price, ram_gb, storage_gb, gaming_score, programming_score, weight_kg]
+        # Vector: [price, ram_gb, storage_gb, gaming_suitability, programming_suitability, dedicated_gpu]
         features.append([
             float(p.get("price", 0)),
             float(p.get("ram_gb", 8)),
             float(p.get("storage_gb", 512)),
-            float(p.get("gaming_score", 1)),
-            float(p.get("programming_score", 1)),
-            float(p.get("weight_kg", 1.8)),
+            float(p.get("gaming_suitability", 1)),
+            float(p.get("programming_suitability", 1)),
+            1.0 if p.get("dedicated_gpu", False) else 0.0,
         ])
 
     X = np.array(features)
@@ -81,9 +81,9 @@ def get_similar_laptops(product_name: str, products: List[Dict[str, Any]], model
         float(products[idx].get("price", 0)),
         float(products[idx].get("ram_gb", 8)),
         float(products[idx].get("storage_gb", 512)),
-        float(products[idx].get("gaming_score", 1)),
-        float(products[idx].get("programming_score", 1)),
-        float(products[idx].get("weight_kg", 1.8)),
+        float(products[idx].get("gaming_suitability", 1)),
+        float(products[idx].get("programming_suitability", 1)),
+        1.0 if products[idx].get("dedicated_gpu", False) else 0.0,
     ]])
     scaled_target = scaler.transform(target)
     distances, indices = model.kneighbors(scaled_target)
@@ -111,19 +111,6 @@ st.markdown(
         color: #6B7280;
         font-size: 1rem;
         margin-bottom: 1.5rem;
-    }
-    .event-card {
-        padding: 12px 16px;
-        border-radius: 8px;
-        border-left: 4px solid #3B82F6;
-        background-color: #F8FAFC;
-        margin-bottom: 8px;
-    }
-    .event-badge {
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-weight: 600;
     }
     </style>
     """,
@@ -187,14 +174,6 @@ with tab_agent:
 
                     for idx, ev in enumerate(result.events, start=1):
                         ev_type = ev.event_type.value if hasattr(ev.event_type, "value") else str(ev.event_type)
-                        color = "#3B82F6"
-                        if "error" in ev_type:
-                            color = "#EF4444"
-                        elif "completed" in ev_type:
-                            color = "#10B981"
-                        elif "started" in ev_type:
-                            color = "#8B5CF6"
-
                         with st.expander(f"[{idx}] {ev_type.upper()} {f'— Tool: {ev.tool_name}' if ev.tool_name else ''}", expanded=True):
                             st.write(f"**Status:** `{ev.status.value if hasattr(ev.status, 'value') else ev.status}`")
                             if ev.summary:
@@ -233,9 +212,9 @@ with tab_ml:
             st.markdown(f"### 🎯 Selected Laptop\n**{base_item['name']}**")
             st.metric("Price", f"₹{base_item['price']:,}")
             st.metric("RAM / Storage", f"{base_item['ram_gb']}GB / {base_item['storage_gb']}GB")
-            st.write(f"🎮 **Gaming Score:** {base_item.get('gaming_score', 'N/A')}/5")
-            st.write(f"💻 **Programming Score:** {base_item.get('programming_score', 'N/A')}/5")
-            st.write(f"⚖️ **Weight:** {base_item.get('weight_kg', 'N/A')} kg")
+            st.write(f"🎮 **Gaming Suitability:** {base_item.get('gaming_suitability', 'N/A')}/5")
+            st.write(f"💻 **Programming Suitability:** {base_item.get('programming_suitability', 'N/A')}/5")
+            st.write(f"⚡ **Dedicated GPU:** {'Yes' if base_item.get('dedicated_gpu') else 'No'}")
 
         with col_sim:
             st.markdown("### 🔍 Top Similar Alternatives (Scikit-Learn ML)")
@@ -249,7 +228,7 @@ with tab_ml:
                         st.caption(f"{p['processor']} | {p['ram_gb']}GB RAM | {p['storage_gb']}GB SSD | {p.get('gpu', 'Integrated')}")
                     with c2:
                         st.markdown(f"**₹{p['price']:,}**")
-                        st.caption(f"Weight: {p['weight_kg']} kg")
+                        st.caption(f"Category: {p.get('category', 'general')}")
                     with c3:
                         st.metric("Similarity", f"{m['similarity_score']}%")
 

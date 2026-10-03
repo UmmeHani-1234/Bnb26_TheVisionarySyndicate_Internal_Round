@@ -1,6 +1,11 @@
-﻿"""Agent tests using a scripted fake chat model: no API key, no network, fully deterministic."""
+"""Agent tests using a scripted fake chat model: no API key, no network, fully deterministic."""
 
+import sys
+from pathlib import Path
 from typing import Any
+
+# Ensure project root is on sys.path for direct execution
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 from langchain_core.language_models import BaseChatModel
@@ -165,3 +170,8 @@ def test_build_llm_requires_model_for_unknown_provider(monkeypatch):
     monkeypatch.delenv("LLM_MODEL", raising=False)
     with pytest.raises(ConfigError, match="LLM_MODEL"):
         build_llm(provider="openai")
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(pytest.main(["-v", __file__]))
