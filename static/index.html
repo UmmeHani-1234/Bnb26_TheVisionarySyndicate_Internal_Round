@@ -3,31 +3,88 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BLACK BOX | Trace Viewer</title>
+  <title>BLACK BOX | Failure Intelligence & Trace Viewer</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
       margin: 0;
-      padding: 24px;
-      background: #0f172a;
+      padding: 20px 24px;
+      background: #0b1120;
       color: #f1f5f9;
     }
     h1 {
-      margin-top: 0;
-      font-size: 1.8rem;
+      margin: 0;
+      font-size: 1.7rem;
       letter-spacing: 2px;
       color: #38bdf8;
+      display: inline-block;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
     }
     .subtitle {
       color: #94a3b8;
-      margin-bottom: 24px;
-      font-size: 0.9rem;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
     }
+    .run-box {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      background: #1e293b;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 9px 12px;
+      color: #f1f5f9;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+    select {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #f1f5f9;
+      padding: 9px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      border: none;
+      padding: 9px 16px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    button:hover { background: #0284c7; }
+    button.secondary {
+      background: #334155;
+      color: #f1f5f9;
+    }
+    button.secondary:hover { background: #475569; }
+    button.bench-btn {
+      background: #8b5cf6;
+      color: #fff;
+    }
+    button.bench-btn:hover { background: #7c3aed; }
+
     .layout {
       display: grid;
-      grid-template-columns: 320px 420px 1fr;
-      gap: 20px;
-      height: calc(100vh - 120px);
+      grid-template-columns: 310px 410px 1fr;
+      gap: 16px;
+      height: calc(100vh - 160px);
     }
     .panel {
       background: #1e293b;
@@ -40,7 +97,7 @@
     }
     .panel-header {
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       border-bottom: 1px solid #334155;
       padding-bottom: 8px;
       margin-bottom: 12px;
@@ -53,7 +110,7 @@
       flex: 1;
     }
     .run-item {
-      padding: 10px 14px;
+      padding: 10px 12px;
       border-radius: 6px;
       background: #0f172a;
       margin-bottom: 8px;
@@ -62,13 +119,14 @@
       justify-content: space-between;
       align-items: center;
       border: 1px solid transparent;
+      transition: all 0.15s;
     }
     .run-item:hover, .run-item.active {
       border-color: #38bdf8;
       background: #1e293b;
     }
     .badge {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       padding: 3px 8px;
       border-radius: 4px;
@@ -77,6 +135,8 @@
     .badge.success { background: #065f46; color: #34d399; }
     .badge.failed, .badge.error { background: #7f1d1d; color: #f87171; }
     .badge.running { background: #1e3a8a; color: #60a5fa; }
+    .badge.warning { background: #78350f; color: #fde047; }
+
     .step-item {
       padding: 10px 12px;
       background: #0f172a;
@@ -87,12 +147,17 @@
       justify-content: space-between;
       align-items: center;
       border: 1px solid transparent;
+      transition: border-color 0.15s;
     }
     .step-item:hover, .step-item.active {
       border-color: #38bdf8;
     }
+    .step-item.suspected {
+      border-color: #f59e0b;
+      background: #1e1b18;
+    }
     .step-name {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
     }
     .detail-box {
       background: #0f172a;
@@ -115,40 +180,134 @@
       color: #cbd5e1;
       font-size: 0.8rem;
     }
-    .run-box {
-      margin-bottom: 16px;
+
+    /* Diagnosis Styles */
+    .diagnosis-card {
+      background: #18181b;
+      border: 1px solid #dc2626;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .diagnosis-card.healthy {
+      border-color: #059669;
+    }
+    .diag-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #f87171;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .diag-title.healthy {
+      color: #34d399;
+    }
+    .evidence-list {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+      color: #e2e8f0;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .score-bar-container {
+      background: #0f172a;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .score-bar {
+      height: 100%;
+      background: #38bdf8;
+      border-radius: 4px;
+    }
+    .score-bar.high { background: #ef4444; }
+    .score-bar.med { background: #f59e0b; }
+    .tabs-header {
       display: flex;
       gap: 8px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 6px;
     }
-    input[type="text"] {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid #334155;
-      padding: 8px 12px;
-      color: #f1f5f9;
-      border-radius: 6px;
+    .tab-btn {
+      background: transparent;
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.82rem;
     }
-    button {
-      background: #38bdf8;
-      color: #0f172a;
-      border: none;
-      padding: 8px 16px;
+    .tab-btn.active {
+      background: #334155;
+      color: #38bdf8;
       font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
     }
-    button:hover { background: #0284c7; }
+
+    /* Benchmark Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 10px;
+      width: 800px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 0.8rem;
+    }
+    th, td {
+      border: 1px solid #334155;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #0f172a;
+      color: #38bdf8;
+    }
   </style>
 </head>
 <body>
 
-  <h1>BLACK BOX</h1>
-  <div class="subtitle">Agent Trace Storage & Observable Step Inspection (Phase 3 MVP)</div>
+  <div class="header-row">
+    <div>
+      <h1>BLACK BOX</h1>
+      <span class="badge" style="background:#38bdf8; color:#0f172a; margin-left: 8px;">STAGE 4 ACTIVE</span>
+    </div>
+    <div>
+      <button class="bench-btn" onclick="openBenchmarkModal()">Run Benchmark Evaluation (Top-1 / Top-3)</button>
+    </div>
+  </div>
+  <div class="subtitle">Failure Intelligence & Observable Root-Cause Localization</div>
 
+  <!-- Agent Execution Box with Failure Mode Selector -->
   <div class="run-box">
     <input type="text" id="queryInput" placeholder="Enter query e.g. Find a laptop under ₹70,000 for programming" value="Find a laptop under ₹70,000 for programming and gaming" />
-    <button id="runBtn" onclick="triggerRun()">Run Agent & Record</button>
-    <button onclick="fetchRuns()" style="background: #334155; color: #f1f5f9;">Refresh</button>
+    <select id="failureModeSelect" title="Inject reproducible failure scenario">
+      <option value="none">Normal Run (SUCCESS)</option>
+      <option value="budget_violation">Failure C: Budget Violation</option>
+      <option value="wrong_interpretation">Failure B: Result Interpretation Mismatch</option>
+      <option value="wrong_tool">Failure A: Incorrect Tool Selection</option>
+      <option value="unexpected_output">Failure D: Unexpected Tool Output</option>
+      <option value="timeout">Failure E: Tool Timeout / Failure</option>
+    </select>
+    <button id="runBtn" onclick="triggerRun()">Execute Agent</button>
+    <button class="secondary" onclick="fetchRuns()">Refresh</button>
   </div>
 
   <div class="layout">
@@ -165,20 +324,69 @@
     <!-- PANEL 2: ORDERED EXECUTION STEPS -->
     <div class="panel">
       <div class="panel-header">
-        <span id="selectedRunTitle">Run Details</span>
+        <span id="selectedRunTitle">Execution Trace</span>
       </div>
       <div class="panel-content" id="stepsPanel">
         <div style="color: #64748b;">Select a run to view ordered execution steps.</div>
       </div>
     </div>
 
-    <!-- PANEL 3: STEP OBSERVABLE DETAILS -->
+    <!-- PANEL 3: FAILURE INTELLIGENCE & DETAILS -->
     <div class="panel">
-      <div class="panel-header">
-        <span id="selectedStepTitle">Step Observable Details</span>
+      <div class="tabs-header">
+        <button class="tab-btn active" id="tabDiagBtn" onclick="switchTab('diag')">Failure Diagnosis</button>
+        <button class="tab-btn" id="tabStepBtn" onclick="switchTab('step')">Step Observable Details</button>
       </div>
-      <div class="panel-content" id="stepDetailPanel">
-        <div style="color: #64748b;">Click an individual step to inspect observable inputs, outputs, status, and timing.</div>
+
+      <!-- Tab View 1: Failure Diagnosis -->
+      <div class="panel-content" id="diagnosisTab">
+        <div style="color: #64748b;">Select a run to inspect failure diagnosis.</div>
+      </div>
+
+      <!-- Tab View 2: Step Observable Details -->
+      <div class="panel-content" id="stepDetailTab" style="display:none;">
+        <div style="color: #64748b;">Click an individual step in the middle panel to inspect observable values.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENCHMARK MODAL -->
+  <div class="modal-overlay" id="benchmarkModal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; font-size:1.3rem; color:#a78bfa;">Failure Localization Benchmark Evaluation</h2>
+        <button class="secondary" onclick="closeBenchmarkModal()">Close</button>
+      </div>
+      <div id="benchmarkLoading" style="padding:20px; text-align:center; color:#94a3b8;">
+        Running 7 controlled scenarios and calculating objective Top-1 & Top-3 accuracy...
+      </div>
+      <div id="benchmarkContent" style="display:none;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:16px;">
+          <div class="detail-box" style="border-left: 4px solid #38bdf8;">
+            <div class="detail-label">Top-1 Accuracy</div>
+            <div style="font-size:1.8rem; font-weight:800; color:#38bdf8;" id="metricTop1">-</div>
+            <div style="font-size:0.75rem; color:#94a3b8;">Primary suspected step exactly matches ground-truth root cause</div>
+          </div>
+          <div class="detail-box" style="border-left: 4px solid #a78bfa;">
+            <div class="detail-label">Top-3 Accuracy</div>
+            <div style="font-size:1.8rem; font-weight:800; color:#a78bfa;" id="metricTop3">-</div>
+            <div style="font-size:0.75rem; color:#94a3b8;">Ground-truth root cause appears in Top-3 suspected steps</div>
+          </div>
+        </div>
+        <div style="font-weight:700; font-size:0.9rem; margin-top:12px;">Scenario Breakdown:</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Expected Failure</th>
+              <th>Predicted Failure</th>
+              <th>Responsible Step</th>
+              <th>Top-1</th>
+              <th>Top-3</th>
+            </tr>
+          </thead>
+          <tbody id="benchmarkTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -186,7 +394,9 @@
   <script>
     let currentRuns = [];
     let currentTrace = null;
+    let currentDiagnosis = null;
     let selectedRunId = null;
+    let activeTab = "diag";
 
     async function fetchRuns() {
       try {
@@ -210,8 +420,8 @@
       container.innerHTML = currentRuns.map(r => `
         <div class="run-item ${r.run_id === selectedRunId ? 'active' : ''}" onclick="selectRun('${r.run_id}')">
           <div>
-            <div style="font-weight:600; font-size:0.9rem;">Run #${r.run_id}</div>
-            <div style="font-size:0.75rem; color:#94a3b8;">${r.started_at ? r.started_at.substring(11, 19) : ''}</div>
+            <div style="font-weight:600; font-size:0.88rem;">Run #${r.run_id}</div>
+            <div style="font-size:0.72rem; color:#94a3b8;">${r.started_at ? r.started_at.substring(11, 19) : ''}</div>
           </div>
           <span class="badge ${r.status}">${r.status}</span>
         </div>
@@ -221,16 +431,23 @@
     async function selectRun(runId) {
       selectedRunId = runId;
       renderRuns();
-      const container = document.getElementById("stepsPanel");
-      container.innerHTML = `<div style="color:#64748b;">Loading trace #${runId}...</div>`;
+      const stepsContainer = document.getElementById("stepsPanel");
+      stepsContainer.innerHTML = `<div style="color:#64748b;">Loading trace #${runId}...</div>`;
 
       try {
-        const res = await fetch(`/runs/${runId}`);
-        if (!res.ok) throw new Error("Run not found");
-        currentTrace = await res.json();
+        const [traceRes, diagRes] = await Promise.all([
+          fetch(`/runs/${runId}`),
+          fetch(`/runs/${runId}/diagnosis`)
+        ]);
+
+        if (!traceRes.ok) throw new Error("Run not found");
+        currentTrace = await traceRes.json();
+        currentDiagnosis = diagRes.ok ? await diagRes.json() : null;
+
         renderTrace();
+        renderDiagnosis();
       } catch (e) {
-        container.innerHTML = `<div style="color:#ef4444;">Error: ${e.message}</div>`;
+        stepsContainer.innerHTML = `<div style="color:#ef4444;">Error: ${e.message}</div>`;
       }
     }
 
@@ -241,25 +458,32 @@
       let html = `
         <div class="detail-box">
           <div class="detail-label">User Request</div>
-          <div style="font-weight:600;">${currentTrace.user_request || "N/A"}</div>
+          <div style="font-weight:600; font-size:0.9rem;">${currentTrace.user_request || "N/A"}</div>
           <div style="margin-top:6px; font-size:0.75rem; color:#94a3b8;">
             Status: <span class="badge ${currentTrace.status}">${currentTrace.status}</span>
           </div>
         </div>
         <div style="font-size:0.8rem; color:#94a3b8; margin: 8px 0 6px 2px; text-transform:uppercase; font-weight:700;">
-          Ordered Execution Steps (${(currentTrace.steps || []).length})
+          Execution Trace (${(currentTrace.steps || []).length} steps)
         </div>
       `;
 
       if (!currentTrace.steps || currentTrace.steps.length === 0) {
         html += '<div style="color:#64748b;">No steps recorded for this run.</div>';
       } else {
-        html += currentTrace.steps.map((s, idx) => {
-          const icon = s.status === 'success' ? '✓' : (s.status === 'running' ? '⏳' : '✗');
-          const color = s.status === 'success' ? '#34d399' : (s.status === 'running' ? '#60a5fa' : '#f87171');
+        const likelyId = currentDiagnosis && currentDiagnosis.likely_responsible_step ? currentDiagnosis.likely_responsible_step.step_id : null;
+
+        html += currentTrace.steps.map((s) => {
+          const isSuspected = s.step_id === likelyId;
+          let icon = s.status === 'success' ? '✓' : (s.status === 'running' ? '⏳' : '✗');
+          let color = s.status === 'success' ? '#34d399' : (s.status === 'running' ? '#60a5fa' : '#f87171');
+          if (isSuspected) {
+            icon = '⚠';
+            color = '#f59e0b';
+          }
           const name = s.tool_name ? `${s.step_type} (${s.tool_name})` : s.step_type;
           return `
-            <div class="step-item" id="step-item-${s.step_id}" onclick="selectStep(${s.step_id})">
+            <div class="step-item ${isSuspected ? 'suspected' : ''}" id="step-item-${s.step_id}" onclick="selectStep(${s.step_id})">
               <span class="step-name">${s.step_id}. ${name}</span>
               <span style="color:${color}; font-weight:700;">${icon}</span>
             </div>
@@ -273,6 +497,76 @@
       }
     }
 
+    function renderDiagnosis() {
+      const container = document.getElementById("diagnosisTab");
+      if (!currentDiagnosis) {
+        container.innerHTML = '<div style="color:#64748b;">No diagnosis available.</div>';
+        return;
+      }
+
+      if (!currentDiagnosis.failure_detected) {
+        container.innerHTML = `
+          <div class="diagnosis-card healthy">
+            <div class="diag-title healthy">✓ NO FAILURE DETECTED</div>
+            <div style="font-size:0.85rem; color:#cbd5e1;">All execution steps completed successfully. Constraints and validations satisfied.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const likely = currentDiagnosis.likely_responsible_step || { step_id: "?", step_type: "Unknown", score: 0.0 };
+      const scorePct = Math.round(likely.score * 100);
+
+      let html = `
+        <div class="diagnosis-card">
+          <div class="diag-title">⚠ FAILURE DIAGNOSIS</div>
+          <div style="font-size:0.85rem; margin-bottom:8px;">
+            <div style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Likely Failure Step</div>
+            <div style="font-weight:700; font-size:1.05rem; color:#f87171;">
+              Step ${likely.step_id} — ${likely.step_type} ${likely.tool_name ? `(${likely.tool_name})` : ''}
+            </div>
+          </div>
+          <div style="font-size:0.85rem; margin-bottom:8px;">
+            <div style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Failure Type</div>
+            <div style="font-weight:600; text-transform:capitalize;">${currentDiagnosis.failure_type.replace(/_/g, " ")}</div>
+          </div>
+          <div style="font-size:0.85rem; margin-bottom:8px;">
+            <div style="color:#94a3b8; font-size:0.75rem; text-transform:uppercase; font-weight:700;">Suspicion Score</div>
+            <div style="font-weight:700; color:#f59e0b;">${scorePct}% (${likely.score})</div>
+          </div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-label">Observable Evidence</div>
+          <ul class="evidence-list">
+            ${currentDiagnosis.evidence.map(e => `<li><b>${e.type.replace(/_/g, ' ')}:</b> ${e.description}</li>`).join("")}
+          </ul>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-label">Top Suspected Steps Ranking</div>
+          ${(currentDiagnosis.top_suspected_steps || []).map((s, idx) => {
+            const pct = Math.round(s.score * 100);
+            const isHigh = s.score >= 0.7;
+            const isMed = s.score >= 0.3 && s.score < 0.7;
+            return `
+              <div style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                  <span><b>#${idx + 1}</b> Step ${s.step_id} (${s.step_type})</span>
+                  <span style="font-weight:700; color:${isHigh ? '#f87171' : (isMed ? '#f59e0b' : '#38bdf8')}">${pct}%</span>
+                </div>
+                <div class="score-bar-container">
+                  <div class="score-bar ${isHigh ? 'high' : (isMed ? 'med' : '')}" style="width: ${pct}%;"></div>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
     function selectStep(stepId) {
       if (!currentTrace || !currentTrace.steps) return;
       document.querySelectorAll(".step-item").forEach(el => el.classList.remove("active"));
@@ -282,18 +576,16 @@
       const step = currentTrace.steps.find(s => s.step_id === stepId);
       if (!step) return;
 
-      document.getElementById("selectedStepTitle").innerText = `STEP ${step.step_id}`;
-      const container = document.getElementById("stepDetailPanel");
-
+      const container = document.getElementById("stepDetailTab");
       container.innerHTML = `
         <div class="detail-box">
-          <div class="detail-label">Type</div>
-          <div>${step.step_type}</div>
+          <div class="detail-label">Step ID & Type</div>
+          <div style="font-weight:700; color:#38bdf8;">Step ${step.step_id}: ${step.step_type}</div>
         </div>
         ${step.tool_name ? `
         <div class="detail-box">
           <div class="detail-label">Tool</div>
-          <div style="color:#38bdf8; font-weight:600;">${step.tool_name}</div>
+          <div style="color:#a78bfa; font-weight:600;">${step.tool_name}</div>
         </div>` : ''}
         <div class="detail-box">
           <div class="detail-label">Input</div>
@@ -304,12 +596,8 @@
           <pre>${step.output ? JSON.stringify(step.output, null, 2) : "None"}</pre>
         </div>
         <div class="detail-box">
-          <div class="detail-label">Status</div>
-          <span class="badge ${step.status}">${step.status}</span>
-        </div>
-        <div class="detail-box">
-          <div class="detail-label">Latency</div>
-          <div>${step.latency !== null && step.latency !== undefined ? `${step.latency} seconds` : "N/A"}</div>
+          <div class="detail-label">Status & Latency</div>
+          <div><span class="badge ${step.status}">${step.status}</span> &nbsp; ${step.latency !== null && step.latency !== undefined ? `${step.latency}s` : "N/A"}</div>
         </div>
         <div class="detail-box">
           <div class="detail-label">Timestamp</div>
@@ -318,18 +606,35 @@
       `;
     }
 
+    function switchTab(tab) {
+      activeTab = tab;
+      if (tab === 'diag') {
+        document.getElementById("diagnosisTab").style.display = "block";
+        document.getElementById("stepDetailTab").style.display = "none";
+        document.getElementById("tabDiagBtn").classList.add("active");
+        document.getElementById("tabStepBtn").classList.remove("active");
+      } else {
+        document.getElementById("diagnosisTab").style.display = "none";
+        document.getElementById("stepDetailTab").style.display = "block";
+        document.getElementById("tabDiagBtn").classList.remove("active");
+        document.getElementById("tabStepBtn").classList.add("active");
+      }
+    }
+
     async function triggerRun() {
       const q = document.getElementById("queryInput").value.trim();
+      const mode = document.getElementById("failureModeSelect").value;
       if (!q) return alert("Please enter a query.");
+
       const btn = document.getElementById("runBtn");
       btn.disabled = true;
-      btn.innerText = "Running Agent...";
+      btn.innerText = "Running...";
 
       try {
         const res = await fetch("/agent/run", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ request: q })
+          body: JSON.stringify({ request: q, failure_mode: mode === "none" ? null : mode })
         });
         const data = await res.json();
         await fetchRuns();
@@ -340,7 +645,44 @@
         alert("Run failed: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.innerText = "Run Agent & Record";
+        btn.innerText = "Execute Agent";
+      }
+    }
+
+    function openBenchmarkModal() {
+      document.getElementById("benchmarkModal").style.display = "flex";
+      document.getElementById("benchmarkLoading").style.display = "block";
+      document.getElementById("benchmarkContent").style.display = "none";
+      runBenchmarkEval();
+    }
+
+    function closeBenchmarkModal() {
+      document.getElementById("benchmarkModal").style.display = "none";
+    }
+
+    async function runBenchmarkEval() {
+      try {
+        const res = await fetch("/evaluate/diagnosis", { method: "POST" });
+        const data = await res.json();
+        document.getElementById("metricTop1").innerText = `${data.top1_accuracy}%`;
+        document.getElementById("metricTop3").innerText = `${data.top3_accuracy}%`;
+
+        const tbody = document.getElementById("benchmarkTableBody");
+        tbody.innerHTML = (data.details || []).map(d => `
+          <tr>
+            <td><b>${d.scenario_id}</b><br/><span style="color:#94a3b8; font-size:0.75rem;">${d.description}</span></td>
+            <td><span class="badge ${d.expected_failure_type === 'none' ? 'success' : 'failed'}">${d.expected_failure_type}</span></td>
+            <td><span class="badge ${d.predicted_failure_type === 'none' ? 'success' : 'failed'}">${d.predicted_failure_type}</span></td>
+            <td><code>${d.ground_truth_step_type}</code></td>
+            <td style="color:${d.is_top1_match ? '#34d399' : '#ef4444'}; font-weight:700;">${d.is_top1_match ? '✓ MATCH' : '✗ MISS'}</td>
+            <td style="color:${d.is_top3_match ? '#34d399' : '#ef4444'}; font-weight:700;">${d.is_top3_match ? '✓ MATCH' : '✗ MISS'}</td>
+          </tr>
+        `).join("");
+
+        document.getElementById("benchmarkLoading").style.display = "none";
+        document.getElementById("benchmarkContent").style.display = "block";
+      } catch (e) {
+        document.getElementById("benchmarkLoading").innerHTML = `<div style="color:#ef4444;">Evaluation failed: ${e.message}</div>`;
       }
     }
 

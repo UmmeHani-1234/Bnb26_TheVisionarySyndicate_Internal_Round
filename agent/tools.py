@@ -44,10 +44,26 @@ def error_result(error_type: str, message: str, **extra: Any) -> dict:
 
 
 def _guard(fn: Callable[..., dict]) -> Callable[..., dict]:
-    """Turn any exception inside a tool into a structured error result."""
+    """Turn any exception inside a tool into a structured error result.
+    
+    Supports reproducible failure injection via FAILURE_MODE environment variable.
+    """
 
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> dict:
+        mode = os.getenv("FAILURE_MODE", "").strip().lower()
+        if mode == "timeout":
+            return error_result("timeout", "Tool execution timed out after 30000ms")
+        if mode == "unexpected_output":
+            return {
+                "status": "success",
+                "malformed": True,
+                "product": "Faulty Laptop",
+                "price": None,
+                "count": 1,
+                "products": [{"name": "Faulty Laptop", "price": None}],
+            }
+
         try:
             return fn(*args, **kwargs)
         except ToolInputError as exc:

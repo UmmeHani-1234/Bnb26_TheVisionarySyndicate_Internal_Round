@@ -162,12 +162,17 @@ def summarize_tool_output(tool_name: Optional[str], output: Any) -> str:
         total = passed + output.get("failed_count", 0)
         return f"{output.get('product')}: {passed}/{total} requirements passed"
     if tool_name == "calculate_budget":
-        diff = output.get("difference", 0)
-        name = output.get("product")
-        price = output.get("price", 0)
+        diff = output.get("difference") or 0
+        name = output.get("product") or "Product"
+        price = output.get("price") or 0
+        try:
+            p_val = float(price)
+            d_val = float(diff)
+        except (ValueError, TypeError):
+            p_val, d_val = 0.0, 0.0
         if output.get("within_budget"):
-            return f"{name}: ₹{price:,.0f} is ₹{diff:,.0f} under budget"
-        return f"{name}: ₹{price:,.0f} is ₹{abs(diff):,.0f} over budget"
+            return f"{name}: ₹{p_val:,.0f} is ₹{d_val:,.0f} under budget"
+        return f"{name}: ₹{p_val:,.0f} is ₹{abs(d_val):,.0f} over budget"
     return "Completed"
 
 

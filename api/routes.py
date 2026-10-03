@@ -35,6 +35,7 @@ class CreateEventRequest(BaseModel):
 class AgentRunRequest(BaseModel):
     request: str = Field(description="Prompt for the Laptop Recommendation Agent")
     run_id: Optional[str] = Field(default=None, description="Optional custom run ID")
+    failure_mode: Optional[str] = Field(default=None, description="Controlled failure injection mode")
 
 
 def get_repo(db: Session = Depends(get_db)) -> TraceRepository:
@@ -82,14 +83,36 @@ def get_one_run(run_id: str, repo: TraceRepository = Depends(get_repo)):
     return trace
 
 
+@router.get("/runs/{run_id}/diagnosis")
+def diagnose_run(run_id: str, repo: TraceRepository = Depends(get_repo)):
+    """GET /runs/{run_id}/diagnosis: Analyzes trace and returns root-cause failure intelligence."""
+    trace = repo.get_run_trace(run_id)
+    if not trace:
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
+
+    from intelligence.rules import RuleBasedLocalizer
+    localizer = RuleBasedLocalizer()
+    diagnosis = localizer.diagnose(trace)
+    return diagnosis.to_dict()
+
+
+@router.post("/evaluate/diagnosis")
+def evaluate_diagnosis_accuracy(repo: TraceRepository = Depends(get_repo)):
+    """POST /evaluate/diagnosis: Runs labeled evaluation scenarios and computes Top-1 & Top-3 accuracy."""
+    from intelligence.benchmark import BenchmarkRunner
+    runner = BenchmarkRunner(repository=repo)
+    metrics = runner.run_benchmark()
+    return metrics.to_dict()
+
+
 @router.post("/agent/run")
 def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depends(get_repo)):
-    """Executes the LangChain agent with automatic trace recording."""
+    """Executes the LangChain agent with automatic trace recording and optional failure injection."""
     run_id = body.run_id or f"run-{uuid.uuid4().hex[:8]}"
     recorder = ExecutionRecorder(run_id=run_id, repository=repo)
 
     agent = LaptopAgent(sinks=[recorder.record])
-    agent_result = agent.run(body.request)
+    agent_result = agent.run(body.request, failure_mode=body.failure_mode)
 
     trace = repo.get_run_trace(run_id)
     return {

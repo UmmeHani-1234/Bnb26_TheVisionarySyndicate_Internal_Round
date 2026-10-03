@@ -60,9 +60,11 @@ class LocalChatModel(BaseChatModel):
     
     Acts as an autonomous recommendation engine that drives the LangChain
     tool loop (search -> specs -> budget -> final response) deterministically.
+    Supports reproducible failure injection via failure_mode or FAILURE_MODE env var.
     """
 
     model_name: str = "blackbox-local-offline"
+    failure_mode: Optional[str] = None
 
     @property
     def _llm_type(self) -> str:
@@ -78,6 +80,8 @@ class LocalChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> ChatResult:
+        mode = (self.failure_mode or os.getenv("FAILURE_MODE") or "none").strip().lower()
+
         # 1. Identify the user's initial request
         user_text = ""
         for msg in messages:
@@ -87,6 +91,20 @@ class LocalChatModel(BaseChatModel):
         # 2. Inspect what tools have been executed so far
         tool_messages: list[ToolMessage] = [m for m in messages if isinstance(m, ToolMessage)]
         executed_tool_names = [getattr(m, "name", "") for m in tool_messages]
+
+        # Injected Failure A: wrong_tool -> select inappropriate tool first
+        if mode == "wrong_tool" and not executed_tool_names:
+            call_id = f"call_{uuid4().hex[:8]}"
+            msg = AIMessage(
+                content="Checking specifications directly for non-existent laptop without prior search.",
+                tool_calls=[{
+                    "name": "check_specifications",
+                    "args": {"product_name": "NonExistentLaptop", "min_ram_gb": 32},
+                    "id": call_id,
+                    "type": "tool_call",
+                }],
+            )
+            return ChatResult(generations=[ChatGeneration(message=msg)])
 
         # Stage 1: No tools called yet -> Call search_products
         if "search_products" not in executed_tool_names:
@@ -107,7 +125,7 @@ class LocalChatModel(BaseChatModel):
             if needs_prog:
                 search_args["needs_programming"] = True
             if needs_student:
-                search_args["category"] = "student"
+                search_args["category"] = "budget"
 
             call_id = f"call_{uuid4().hex[:8]}"
             msg = AIMessage(
@@ -183,6 +201,18 @@ class LocalChatModel(BaseChatModel):
         storage = top_laptop.get("storage_gb", "N/A")
         cpu = top_laptop.get("processor", "N/A")
         gpu = top_laptop.get("gpu", "N/A")
+
+        # Injected Failure B: wrong_interpretation -> tool returned price X, agent states Y
+        # Injected Failure C: budget_violation -> agent selects product that exceeds budget
+        if mode == "budget_violation":
+            top_name = "Dell XPS 13"
+            price = 84990
+            cpu = "Intel Core i7-1360P"
+            gpu = "Intel Iris Xe"
+            ram = 16
+            storage = 512
+        elif mode == "wrong_interpretation":
+            price = 85000  # Tool returned 64990 or 58990, but agent hallucinates 85000
 
         price_str = f"₹{price:,}" if isinstance(price, (int, float)) else f"₹{price}"
         final_text = (

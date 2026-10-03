@@ -308,7 +308,13 @@ class LaptopAgent:
         self.recursion_limit = recursion_limit
         self._graph = create_agent(model=self.llm, tools=self.tools, system_prompt=system_prompt)
 
-    def run(self, request: str) -> AgentResult:
+    def run(self, request: str, failure_mode: Optional[str] = None) -> AgentResult:
+        old_mode = os.environ.get("FAILURE_MODE")
+        if failure_mode:
+            os.environ["FAILURE_MODE"] = failure_mode
+            if hasattr(self.llm, "failure_mode"):
+                self.llm.failure_mode = failure_mode
+
         log = EventLog(sinks=self.sinks)
         log.emit(EventType.AGENT_STARTED, summary="Agent started")
         log.emit(
@@ -342,6 +348,14 @@ class LaptopAgent:
                 status="error",
                 events=log.events,
             )
+        finally:
+            if failure_mode:
+                if old_mode is not None:
+                    os.environ["FAILURE_MODE"] = old_mode
+                else:
+                    os.environ.pop("FAILURE_MODE", None)
+                if hasattr(self.llm, "failure_mode"):
+                    self.llm.failure_mode = None
 
         log.emit(
             EventType.FINAL_RESPONSE_GENERATED,

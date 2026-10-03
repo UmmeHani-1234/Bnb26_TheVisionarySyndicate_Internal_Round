@@ -23,6 +23,7 @@ class Run(Base):
     status = Column(String(32), default="running", nullable=False)  # "running", "success", "failed"
     user_request = Column(Text, nullable=False)
     final_output = Column(Text, nullable=True)
+    failure_metadata = Column(JSON, nullable=True)
 
     steps = relationship(
         "ExecutionStep",
@@ -39,6 +40,7 @@ class Run(Base):
             "ended_at": self.ended_at,
             "user_request": self.user_request,
             "final_output": self.final_output,
+            "failure_metadata": self.failure_metadata,
         }
         if include_steps:
             data["steps"] = [step.to_dict() for step in self.steps]

@@ -28,6 +28,7 @@ class TraceRepository:
         user_request: str,
         started_at: Optional[str] = None,
         status: str = "running",
+        failure_metadata: Optional[Dict[str, Any]] = None,
     ) -> Run:
         """Creates a new Run record in storage."""
         session = self._get_session()
@@ -38,6 +39,8 @@ class TraceRepository:
             if existing:
                 existing.user_request = user_request
                 existing.status = status
+                if failure_metadata is not None:
+                    existing.failure_metadata = failure_metadata
                 session.commit()
                 session.refresh(existing)
                 return existing
@@ -47,6 +50,7 @@ class TraceRepository:
                 user_request=user_request,
                 started_at=started_at or utc_now_iso(),
                 status=status,
+                failure_metadata=failure_metadata,
             )
             session.add(run)
             session.commit()
@@ -124,6 +128,7 @@ class TraceRepository:
         status: Optional[str] = None,
         final_output: Optional[str] = None,
         ended_at: Optional[str] = None,
+        failure_metadata: Optional[Dict[str, Any]] = None,
     ) -> Optional[Run]:
         """Updates run status, final response, and completion time."""
         session = self._get_session()
@@ -136,6 +141,8 @@ class TraceRepository:
                 run.status = status
             if final_output is not None:
                 run.final_output = final_output
+            if failure_metadata is not None:
+                run.failure_metadata = failure_metadata
             if ended_at:
                 run.ended_at = ended_at
             elif status in ("success", "failed") and not run.ended_at:

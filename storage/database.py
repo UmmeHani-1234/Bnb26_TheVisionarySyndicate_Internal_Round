@@ -52,6 +52,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db() -> None:
     """Creates database tables if they do not exist."""
     Base.metadata.create_all(bind=engine)
+    try:
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE runs ADD COLUMN failure_metadata JSON"))
+            conn.commit()
+    except Exception:
+        # Column already exists or table freshly created
+        pass
 
 
 def get_db() -> Generator[Session, None, None]:
