@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import {
   MessageSquare,
   ListFilter,
@@ -58,11 +57,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside style={styles.container} className="glass-panel">
+    <aside style={styles.container}>
       {/* Brand Header */}
       <div style={styles.brandContainer}>
         <div style={styles.brandIconBox}>
-          <Terminal size={18} color="#3B82F6" />
+          <Terminal size={18} color="#2563EB" />
         </div>
         <div>
           <div style={styles.brandTitle}>BLACK BOX</div>
@@ -72,9 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* New Chat Button */}
       <div style={styles.newChatSection}>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={() => {
             onNewChat();
             onSelectView('chat');
@@ -84,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Plus size={16} />
           <span>New Chat</span>
-        </motion.button>
+        </button>
       </div>
 
       {/* Navigation List */}
@@ -92,17 +89,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {navItems.map((item) => {
           const isActive = currentView === item.id;
           return (
-            <motion.button
+            <button
               key={item.id}
-              whileHover={{ x: 3 }}
-              whileTap={{ scale: 0.98 }}
               onClick={() => onSelectView(item.id)}
               style={{
                 ...styles.navButton,
                 backgroundColor: isActive ? 'var(--bg-active)' : 'transparent',
                 color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 fontWeight: isActive ? 600 : 400,
-                border: isActive ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
               }}
             >
               <span
@@ -128,27 +122,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {item.badge}
                 </span>
               )}
-            </motion.button>
+            </button>
           );
         })}
       </nav>
 
       {/* Settings / Footer */}
       <div style={styles.footerSection}>
-        <motion.button
-          whileHover={{ x: 3 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={() => onSelectView('settings')}
           style={{
             ...styles.navButton,
             backgroundColor: currentView === 'settings' ? 'var(--bg-active)' : 'transparent',
             color: currentView === 'settings' ? 'var(--text-primary)' : 'var(--text-muted)',
-            border: currentView === 'settings' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
           }}
         >
           <Settings size={16} />
           <span>Settings</span>
-        </motion.button>
+        </button>
       </div>
     </aside>
   );

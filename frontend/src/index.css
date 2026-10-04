@@ -1,48 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #0F172A;
-  --bg-secondary: rgba(15, 23, 42, 0.75);
-  --bg-tertiary: rgba(30, 41, 59, 0.6);
-  --bg-active: rgba(59, 130, 246, 0.15);
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  --bg-active: #E2E8F0;
+  
+  --border-light: #F1F5F9;
+  --border-color: #E2E8F0;
+  --border-subtle: #CBD5E1;
+  --border-focus: #2563EB;
 
-  --glass-bg: rgba(30, 41, 59, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(59, 130, 246, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glass-backdrop: blur(14px);
-
-  --border-light: rgba(255, 255, 255, 0.05);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-subtle: rgba(255, 255, 255, 0.15);
-  --border-focus: #3B82F6;
-
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
   --text-muted: #64748B;
-  --text-disabled: #475569;
+  --text-disabled: #94A3B8;
 
-  --accent-blue: #3B82F6;
-  --accent-blue-hover: #2563EB;
-  --accent-blue-light: rgba(59, 130, 246, 0.15);
-  --accent-cyan: #06B6D4;
-  --accent-purple: #8B5CF6;
+  --accent-blue: #2563EB;
+  --accent-blue-hover: #1D4ED8;
+  --accent-blue-light: #EFF6FF;
 
-  --status-success: #22C55E;
-  --status-success-bg: rgba(34, 197, 94, 0.15);
-  --status-success-border: rgba(34, 197, 94, 0.3);
+  --status-success: #16A34A;
+  --status-success-bg: #F0FDF4;
+  --status-success-border: #BBF7D0;
 
-  --status-error: #EF4444;
-  --status-error-bg: rgba(239, 68, 68, 0.15);
-  --status-error-border: rgba(239, 68, 68, 0.3);
+  --status-error: #DC2626;
+  --status-error-bg: #FEF2F2;
+  --status-error-border: #FECACA;
 
-  --status-warning: #F59E0B;
-  --status-warning-bg: rgba(245, 158, 11, 0.15);
-  --status-warning-border: rgba(245, 158, 11, 0.3);
+  --status-warning: #D97706;
+  --status-warning-bg: #FFFBEB;
+  --status-warning-border: #FDE68A;
 
-  --status-replay: #A855F7;
-  --status-replay-bg: rgba(168, 85, 247, 0.15);
-  --status-replay-border: rgba(168, 85, 247, 0.3);
+  --status-replay: #7C3AED;
+  --status-replay-bg: #F5F3FF;
+  --status-replay-border: #DDD6FE;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -167,46 +159,3 @@ code, pre {
   border-radius: 4px;
   color: var(--text-secondary);
 }
-
-/* Glassmorphism panel styles */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 12px;
-}
-
-.glass-card {
-  background: rgba(30, 41, 59, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-card:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 15px rgba(59, 130, 246, 0.15);
-}
-
-.glow-blue {
-  box-shadow: 0 0 25px rgba(59, 130, 246, 0.25);
-}
-
-.glow-purple {
-  box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
-}
-
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  opacity: 0.15;
-  z-index: 0;
-}
-
