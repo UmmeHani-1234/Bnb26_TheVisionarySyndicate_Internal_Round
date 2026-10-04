@@ -385,6 +385,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
                         })}
                       </div>
                     </div>
+                  )}
 
                   {/* Execution Connection Status Bridge */}
                   {msg.runId && (

@@ -80,6 +80,82 @@
     }
   },
   {
+    "product_id": "mon-004",
+    "name": "LG 27UP650 4K UHD",
+    "brand": "LG",
+    "model": "27UP650-W",
+    "category": "monitor",
+    "subcategory": "productivity_monitor",
+    "price": 24999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1585792180666-f7347c490ee2?auto=format&fit=crop&w=600&q=80",
+    "description": "27-inch 4K UHD (3840 x 2160) IPS Display with VESA DisplayHDR 400, DCI-P3 95%, AMD FreeSync, and ergonomic height-adjustable stand.",
+    "source": "local",
+    "identifiers": {"sku": "LG-27UP650", "upc": "719192641921"},
+    "specifications": {
+      "screen_size": 27.0,
+      "resolution": "3840x2160 (4K UHD)",
+      "panel_type": "IPS",
+      "refresh_rate_hz": 60,
+      "response_time_ms": 5.0,
+      "hdr": "VESA DisplayHDR 400",
+      "ports": ["DisplayPort 1.4", "HDMI 2.0 x2"],
+      "gaming_suitability": 3,
+      "programming_suitability": 5
+    }
+  },
+  {
+    "product_id": "mon-005",
+    "name": "MSI G274F 27 180Hz Gaming Monitor",
+    "brand": "MSI",
+    "model": "G274F",
+    "category": "monitor",
+    "subcategory": "gaming_monitor",
+    "price": 14499,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=600&q=80",
+    "description": "27-inch FHD Rapid IPS Gaming Monitor with 180Hz refresh rate, 1ms GtG response time, G-Sync Compatible, and 134% sRGB wide color gamut.",
+    "source": "local",
+    "identifiers": {"sku": "MSI-G274F", "upc": "824142323816"},
+    "specifications": {
+      "screen_size": 27.0,
+      "resolution": "1920x1080 (FHD)",
+      "panel_type": "Rapid IPS",
+      "refresh_rate_hz": 180,
+      "response_time_ms": 1.0,
+      "ports": ["DisplayPort 1.2a", "HDMI 2.0 x2"],
+      "gaming_suitability": 5,
+      "programming_suitability": 3
+    }
+  },
+  {
+    "product_id": "mon-006",
+    "name": "LG 24MR400 24 IPS 100Hz",
+    "brand": "LG",
+    "model": "24MR400-B",
+    "category": "monitor",
+    "subcategory": "budget_monitor",
+    "price": 7999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1547119957-637f8679db1e?auto=format&fit=crop&w=600&q=80",
+    "description": "24-inch Full HD (1920x1080) IPS display with 100Hz refresh rate, AMD FreeSync, 3-side borderless design, and Reader Mode for eye care.",
+    "source": "local",
+    "identifiers": {"sku": "LG-24MR400", "upc": "719192659018"},
+    "specifications": {
+      "screen_size": 23.8,
+      "resolution": "1920x1080 (FHD)",
+      "panel_type": "IPS",
+      "refresh_rate_hz": 100,
+      "response_time_ms": 5.0,
+      "ports": ["HDMI", "D-Sub"],
+      "gaming_suitability": 3,
+      "programming_suitability": 4
+    }
+  },
+  {
     "product_id": "tv-001",
     "name": "Sony BRAVIA XR A80L 55 OLED",
     "brand": "Sony",
@@ -101,7 +177,7 @@
       "hdr": "Dolby Vision, HDR10, HLG",
       "smart_platform": "Google TV",
       "sound_output_w": 50,
-      "ports": ["HDMI 2.1 x4 (4K 120Hz / eARC)", "USB x2", "Optical Audio", "Ethernet"],
+      "ports": ["HDMI 2.1 x4 (48Gbps / eARC)", "USB x2", "Optical Audio", "Ethernet"],
       "movie_suitability": 5,
       "gaming_suitability": 5
     }
@@ -161,6 +237,59 @@
     }
   },
   {
+    "product_id": "tv-004",
+    "name": "Xiaomi 43 4K Dolby Vision Smart TV X",
+    "brand": "Xiaomi",
+    "model": "L43M8-A2IN",
+    "category": "tv",
+    "subcategory": "budget_4k_tv",
+    "price": 26999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=600&q=80",
+    "description": "43-inch 4K UHD Smart Google TV with Dolby Vision, HDR10, 30W Dolby Audio stereo speakers, PatchWall+, and metallic bezel-less design.",
+    "source": "local",
+    "identifiers": {"sku": "MI-43-4K-X", "upc": "890526701234"},
+    "specifications": {
+      "screen_size": 43.0,
+      "resolution": "3840x2160 (4K UHD)",
+      "panel_type": "LED IPS",
+      "refresh_rate_hz": 60,
+      "hdr": "Dolby Vision, HDR10",
+      "smart_platform": "Google TV",
+      "sound_output_w": 30,
+      "ports": ["HDMI 2.1 x3 (eARC)", "USB x2", "Optical", "Ethernet"],
+      "movie_suitability": 4,
+      "gaming_suitability": 3
+    }
+  },
+  {
+    "product_id": "tv-005",
+    "name": "Mi 32-inch HD Smart Android TV",
+    "brand": "Xiaomi",
+    "model": "L32M8-5AIN",
+    "category": "tv",
+    "subcategory": "budget_tv",
+    "price": 11999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=600&q=80",
+    "description": "32-inch HD Ready Smart Google TV with Vivid Picture Engine, 20W Dolby Audio, dual-band Wi-Fi, and Google Assistant built-in.",
+    "source": "local",
+    "identifiers": {"sku": "MI-32-HD-A", "upc": "890526709876"},
+    "specifications": {
+      "screen_size": 32.0,
+      "resolution": "1366x768 (HD Ready)",
+      "panel_type": "LED",
+      "refresh_rate_hz": 60,
+      "smart_platform": "Google TV",
+      "sound_output_w": 20,
+      "ports": ["HDMI x2", "USB x2", "Ethernet"],
+      "movie_suitability": 3,
+      "gaming_suitability": 2
+    }
+  },
+  {
     "product_id": "phone-001",
     "name": "Samsung Galaxy S24 Ultra",
     "brand": "Samsung",
@@ -183,7 +312,8 @@
       "battery_mah": 5000,
       "fast_charging_w": 45,
       "5g": true,
-      "os": "Android 14 (One UI 6.1, 7 Years OS Updates)"
+      "os": "Android 14 (One UI 6.1, 7 Years OS Updates)",
+      "gaming_suitability": 5
     }
   },
   {
@@ -208,7 +338,8 @@
       "camera": "48MP Main + 12MP Ultra-wide + 12MP 3x Telephoto",
       "battery_mah": 3274,
       "5g": true,
-      "os": "iOS 17"
+      "os": "iOS 17",
+      "gaming_suitability": 5
     }
   },
   {
@@ -234,7 +365,251 @@
       "battery_mah": 4575,
       "fast_charging_w": 27,
       "5g": true,
-      "os": "Android 14 (Pure Pixel Experience)"
+      "os": "Android 14 (Pure Pixel Experience)",
+      "gaming_suitability": 4
+    }
+  },
+  {
+    "product_id": "phone-004",
+    "name": "OnePlus 12",
+    "brand": "OnePlus",
+    "model": "CPH2581",
+    "category": "smartphone",
+    "subcategory": "flagship_phone",
+    "price": 59999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=600&q=80",
+    "description": "6.82-inch 2K 120Hz ProXDR display with Snapdragon 8 Gen 3, 5400mAh battery, 100W SUPERVOOC, and 4th Gen Hasselblad Camera.",
+    "source": "local",
+    "identifiers": {"sku": "1P-12-256", "upc": "692181562541"},
+    "specifications": {
+      "ram_gb": 12,
+      "storage_gb": 256,
+      "processor": "Qualcomm Snapdragon 8 Gen 3",
+      "display": "6.82\" 2K 120Hz LTPO ProXDR AMOLED",
+      "camera": "50MP Sony LYT-808 + 64MP 3x Periscope + 48MP Ultra-wide",
+      "battery_mah": 5400,
+      "fast_charging_w": 100,
+      "5g": true,
+      "os": "OxygenOS 14 (Android 14)",
+      "gaming_suitability": 5
+    }
+  },
+  {
+    "product_id": "phone-005",
+    "name": "Samsung Galaxy S23 5G",
+    "brand": "Samsung",
+    "model": "SM-S911B",
+    "category": "smartphone",
+    "subcategory": "flagship_phone",
+    "price": 49999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?auto=format&fit=crop&w=600&q=80",
+    "description": "6.1-inch Dynamic AMOLED 2X 120Hz compact flagship with Snapdragon 8 Gen 2 for Galaxy, Nightography camera, and Armor Aluminum frame.",
+    "source": "local",
+    "identifiers": {"sku": "SAM-S23-128", "upc": "887276712345"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "Qualcomm Snapdragon 8 Gen 2 for Galaxy",
+      "display": "6.1\" Dynamic AMOLED 2X (120Hz, 1750 nits)",
+      "camera": "50MP Main (OIS) + 12MP Ultra-wide + 10MP 3x Telephoto",
+      "battery_mah": 3900,
+      "fast_charging_w": 25,
+      "5g": true,
+      "os": "One UI 6 (Android 14)",
+      "gaming_suitability": 5
+    }
+  },
+  {
+    "product_id": "phone-006",
+    "name": "OnePlus 12R",
+    "brand": "OnePlus",
+    "model": "CPH2585",
+    "category": "smartphone",
+    "subcategory": "performance_phone",
+    "price": 39999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
+    "description": "6.78-inch 1.5K 120Hz LTPO4 ProXDR display with Snapdragon 8 Gen 2, 5500mAh largest battery, and 100W SUPERVOOC charging.",
+    "source": "local",
+    "identifiers": {"sku": "1P-12R-128", "upc": "692181562678"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "Qualcomm Snapdragon 8 Gen 2",
+      "display": "6.78\" 1.5K 120Hz LTPO4 AMOLED (4500 nits peak)",
+      "camera": "50MP Sony IMX890 (OIS) + 8MP Ultra-wide + 2MP Macro",
+      "battery_mah": 5500,
+      "fast_charging_w": 100,
+      "5g": true,
+      "os": "OxygenOS 14",
+      "gaming_suitability": 5
+    }
+  },
+  {
+    "product_id": "phone-007",
+    "name": "Google Pixel 7a",
+    "brand": "Google",
+    "model": "GHL1X",
+    "category": "smartphone",
+    "subcategory": "midrange_phone",
+    "price": 36999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=600&q=80",
+    "description": "6.1-inch OLED 90Hz display with Google Tensor G2, 64MP flagship-tier camera with Real Tone, wireless charging, and IP67 water resistance.",
+    "source": "local",
+    "identifiers": {"sku": "GOOG-PX7A-128", "upc": "840244703123"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "Google Tensor G2",
+      "display": "6.1\" OLED (90Hz, HDR)",
+      "camera": "64MP Main (OIS) + 13MP Ultra-wide",
+      "battery_mah": 4385,
+      "fast_charging_w": 18,
+      "5g": true,
+      "os": "Android 14",
+      "gaming_suitability": 4
+    }
+  },
+  {
+    "product_id": "phone-008",
+    "name": "OnePlus Nord CE 4 5G",
+    "brand": "OnePlus",
+    "model": "CPH2613",
+    "category": "smartphone",
+    "subcategory": "budget_5g_phone",
+    "price": 24999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=600&q=80",
+    "description": "6.7-inch 120Hz Fluid AMOLED with Qualcomm Snapdragon 7 Gen 3, 100W SUPERVOOC charging, and 5500mAh long-lasting battery.",
+    "source": "local",
+    "identifiers": {"sku": "1P-NCE4-128", "upc": "692181562999"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "Qualcomm Snapdragon 7 Gen 3",
+      "display": "6.7\" 120Hz Fluid AMOLED (HDR10+)",
+      "camera": "50MP Sony LYT-600 (OIS) + 8MP Ultra-wide",
+      "battery_mah": 5500,
+      "fast_charging_w": 100,
+      "5g": true,
+      "os": "OxygenOS 14",
+      "gaming_suitability": 4
+    }
+  },
+  {
+    "product_id": "phone-009",
+    "name": "Nothing Phone (2a)",
+    "brand": "Nothing",
+    "model": "A142",
+    "category": "smartphone",
+    "subcategory": "midrange_phone",
+    "price": 23999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=600&q=80",
+    "description": "6.7-inch Flexible AMOLED 120Hz with Dimensity 7200 Pro, iconic Glyph Interface, dual 50MP cameras, and 5000mAh battery.",
+    "source": "local",
+    "identifiers": {"sku": "NOTH-2A-128", "upc": "506093845012"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "MediaTek Dimensity 7200 Pro (4nm)",
+      "display": "6.7\" Flexible AMOLED (120Hz, 1300 nits)",
+      "camera": "50MP Main (OIS) + 50MP Ultra-wide",
+      "battery_mah": 5000,
+      "fast_charging_w": 45,
+      "5g": true,
+      "os": "Nothing OS 2.5 (Android 14)",
+      "gaming_suitability": 4
+    }
+  },
+  {
+    "product_id": "phone-010",
+    "name": "Realme 12+ 5G",
+    "brand": "Realme",
+    "model": "RMX3867",
+    "category": "smartphone",
+    "subcategory": "budget_5g_phone",
+    "price": 18999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
+    "description": "6.67-inch 120Hz AMOLED with MediaTek Dimensity 7050 5G, Sony LYT-600 OIS camera, luxury watch design, and 67W fast charging.",
+    "source": "local",
+    "identifiers": {"sku": "REALME-12P-128", "upc": "694139906789"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "MediaTek Dimensity 7050 5G",
+      "display": "6.67\" 120Hz AMOLED (2000 nits)",
+      "camera": "50MP Sony LYT-600 OIS + 8MP Ultra-wide",
+      "battery_mah": 5000,
+      "fast_charging_w": 67,
+      "5g": true,
+      "os": "realme UI 5.0 (Android 14)",
+      "gaming_suitability": 3
+    }
+  },
+  {
+    "product_id": "phone-011",
+    "name": "Moto G34 5G",
+    "brand": "Motorola",
+    "model": "XT2363-1",
+    "category": "smartphone",
+    "subcategory": "budget_5g_phone",
+    "price": 11999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?auto=format&fit=crop&w=600&q=80",
+    "description": "6.5-inch 120Hz display with Snapdragon 695 5G, 50MP Quad Pixel camera, stereo speakers with Dolby Atmos, and 5000mAh battery.",
+    "source": "local",
+    "identifiers": {"sku": "MOTO-G34-128", "upc": "840023245678"},
+    "specifications": {
+      "ram_gb": 8,
+      "storage_gb": 128,
+      "processor": "Qualcomm Snapdragon 695 5G",
+      "display": "6.5\" 120Hz IPS LCD",
+      "camera": "50MP Quad Pixel + 2MP Macro",
+      "battery_mah": 5000,
+      "fast_charging_w": 20,
+      "5g": true,
+      "os": "Android 14",
+      "gaming_suitability": 3
+    }
+  },
+  {
+    "product_id": "phone-012",
+    "name": "Redmi 13C 5G",
+    "brand": "Xiaomi",
+    "model": "23124RN87I",
+    "category": "smartphone",
+    "subcategory": "budget_5g_phone",
+    "price": 8999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=600&q=80",
+    "description": "6.74-inch 90Hz display with MediaTek Dimensity 6100+ 5G, 50MP AI dual camera, and 5000mAh long-lasting battery.",
+    "source": "local",
+    "identifiers": {"sku": "MI-13C-5G-128", "upc": "890526703456"},
+    "specifications": {
+      "ram_gb": 4,
+      "storage_gb": 128,
+      "processor": "MediaTek Dimensity 6100+ 5G",
+      "display": "6.74\" 90Hz HD+ Display",
+      "camera": "50MP AI Dual Camera",
+      "battery_mah": 5000,
+      "fast_charging_w": 18,
+      "5g": true,
+      "os": "MIUI 14 (Android 13)",
+      "gaming_suitability": 2
     }
   },
   {
@@ -312,6 +687,72 @@
     }
   },
   {
+    "product_id": "audio-004",
+    "name": "Sony WH-CH720N ANC Headphones",
+    "brand": "Sony",
+    "model": "WH-CH720N",
+    "category": "headphones",
+    "subcategory": "wireless_anc_headphones",
+    "price": 9990,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+    "description": "Lightweight Over-Ear Wireless Headphones with Integrated Processor V1 for Noise Cancelling, Multipoint connection, and up to 35 hours of battery life.",
+    "source": "local",
+    "identifiers": {"sku": "SONY-CH720N", "upc": "027242925123"},
+    "specifications": {
+      "type": "Over-Ear Wireless",
+      "noise_cancellation": true,
+      "battery_life_hours": 35,
+      "bluetooth_version": "5.2",
+      "weight_grams": 192
+    }
+  },
+  {
+    "product_id": "audio-005",
+    "name": "Realme Buds Air 5 Pro ANC",
+    "brand": "Realme",
+    "model": "RMA2120",
+    "category": "earbuds",
+    "subcategory": "true_wireless_anc",
+    "price": 4999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=600&q=80",
+    "description": "True Wireless Earbuds with 50dB Active Noise Cancellation, LDAC Hi-Res Audio, coaxial dual drivers, and 40 hours of playback.",
+    "source": "local",
+    "identifiers": {"sku": "REALME-AIR5PRO", "upc": "694139908765"},
+    "specifications": {
+      "type": "In-Ear True Wireless",
+      "noise_cancellation": true,
+      "battery_life_hours": 10,
+      "total_battery_hours": 40,
+      "water_resistance": "IPX5"
+    }
+  },
+  {
+    "product_id": "audio-006",
+    "name": "boAt Airdopes 141 ANC",
+    "brand": "boAt",
+    "model": "Airdopes 141 ANC",
+    "category": "earbuds",
+    "subcategory": "budget_tws",
+    "price": 1499,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=600&q=80",
+    "description": "True Wireless Earbuds with 32dB Active Noise Cancellation, ASAP Fast Charge, ENx tech quad mics, and 42 hours total playback.",
+    "source": "local",
+    "identifiers": {"sku": "BOAT-AIR141", "upc": "890546701234"},
+    "specifications": {
+      "type": "In-Ear True Wireless",
+      "noise_cancellation": true,
+      "battery_life_hours": 6,
+      "total_battery_hours": 42,
+      "water_resistance": "IPX5"
+    }
+  },
+  {
     "product_id": "cam-001",
     "name": "Sony Alpha A7 IV",
     "brand": "Sony",
@@ -362,6 +803,27 @@
     }
   },
   {
+    "product_id": "cam-003",
+    "name": "Sony ZV-1 II Vlogging Camera",
+    "brand": "Sony",
+    "model": "ZV1M2/B",
+    "category": "camera",
+    "subcategory": "compact_camera",
+    "price": 59990,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80",
+    "description": "20.1MP 1-inch sensor vlogging camera with 18-50mm wide-angle f/1.8-4.0 lens, Cinematic Vlog Setting, 3-capsule directional mic, and 4K video.",
+    "source": "local",
+    "identifiers": {"sku": "SONY-ZV1M2", "upc": "027242926789"},
+    "specifications": {
+      "sensor_type": "1.0-type Exmor RS CMOS",
+      "megapixels": 20.1,
+      "video_resolution": "4K 30p / FHD 120p",
+      "screen": "Vari-Angle Touchscreen LCD"
+    }
+  },
+  {
     "product_id": "watch-001",
     "name": "Apple Watch Series 9 GPS",
     "brand": "Apple",
@@ -408,6 +870,51 @@
     }
   },
   {
+    "product_id": "watch-003",
+    "name": "OnePlus Watch 2R",
+    "brand": "OnePlus",
+    "model": "OPWWE233",
+    "category": "smartwatch",
+    "subcategory": "fitness_smartwatch",
+    "price": 17999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
+    "description": "Wear OS 4 Smartwatch with Dual Engine Snapdragon W5 + BES2700, 100-hour battery life, 1.43\" AMOLED display, dual-frequency GPS, and VO2 Max tracking.",
+    "source": "local",
+    "identifiers": {"sku": "1P-W2R-BLK", "upc": "692181563214"},
+    "specifications": {
+      "case_size_mm": 46,
+      "display": "1.43\" AMOLED (1000 nits)",
+      "battery_life_hours": 100,
+      "sensors": ["Heart Rate", "SpO2", "Stress", "Sleep Tracking", "Dual GPS"],
+      "water_resistance": "5ATM + IP68",
+      "os": "Wear OS 4"
+    }
+  },
+  {
+    "product_id": "watch-004",
+    "name": "Noise ColorFit Pulse 2 Max",
+    "brand": "Noise",
+    "model": "WRB-SW-PULSE2MAX",
+    "category": "smartwatch",
+    "subcategory": "budget_smartwatch",
+    "price": 1499,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80",
+    "description": "1.85-inch TFT LCD Display with Bluetooth Calling, 550 nits brightness, 100 sports modes, SpO2 & 24x7 Heart Rate monitoring, and 10 days battery.",
+    "source": "local",
+    "identifiers": {"sku": "NOISE-PULSE2M", "upc": "890614601234"},
+    "specifications": {
+      "case_size_mm": 44,
+      "display": "1.85\" TFT LCD (550 nits)",
+      "battery_life_hours": 240,
+      "sensors": ["Heart Rate", "SpO2", "Sleep Tracker"],
+      "water_resistance": "IP68"
+    }
+  },
+  {
     "product_id": "tab-001",
     "name": "Apple iPad Air 11 M2",
     "brand": "Apple",
@@ -430,6 +937,54 @@
       "accessory_support": ["Apple Pencil Pro", "Magic Keyboard"],
       "battery_life_hours": 10,
       "os": "iPadOS 17"
+    }
+  },
+  {
+    "product_id": "tab-002",
+    "name": "Xiaomi Pad 6 11",
+    "brand": "Xiaomi",
+    "model": "23043RP34G",
+    "category": "tablet",
+    "subcategory": "productivity_tablet",
+    "price": 24999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=600&q=80",
+    "description": "11-inch 2.8K 144Hz 7-stage refresh rate display with Snapdragon 870, Quad Speakers Dolby Atmos, 8840mAh battery, and 33W fast charging.",
+    "source": "local",
+    "identifiers": {"sku": "MI-PAD6-128", "upc": "890526707890"},
+    "specifications": {
+      "screen_size": 11.0,
+      "processor": "Qualcomm Snapdragon 870",
+      "ram_gb": 6,
+      "storage_gb": 128,
+      "display": "11\" 2.8K (2880x1800, 144Hz, HDR10, Dolby Vision)",
+      "battery_mah": 8840,
+      "os": "MIUI Pad 14 (Android 13)"
+    }
+  },
+  {
+    "product_id": "tab-003",
+    "name": "Lenovo Tab M11",
+    "brand": "Lenovo",
+    "model": "ZADA0028IN",
+    "category": "tablet",
+    "subcategory": "budget_tablet",
+    "price": 12999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=600&q=80",
+    "description": "11-inch WUXGA (1920x1200) 90Hz IPS Display with MediaTek Helio G88, Quad Speakers with Dolby Atmos, Lenovo Tab Pen included, and 7040mAh battery.",
+    "source": "local",
+    "identifiers": {"sku": "LEN-TAB-M11", "upc": "197532845671"},
+    "specifications": {
+      "screen_size": 11.0,
+      "processor": "MediaTek Helio G88",
+      "ram_gb": 4,
+      "storage_gb": 128,
+      "display": "11\" WUXGA (1920x1200, 90Hz, 400 nits)",
+      "battery_mah": 7040,
+      "os": "Android 13"
     }
   },
   {
@@ -456,6 +1011,49 @@
     }
   },
   {
+    "product_id": "spk-002",
+    "name": "JBL Flip 6 Portable Bluetooth Speaker",
+    "brand": "JBL",
+    "model": "JBLFLIP6BLU",
+    "category": "speaker",
+    "subcategory": "portable_speaker",
+    "price": 8999,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80",
+    "description": "2-way speaker system with 30W output, racetrack-shaped woofer, separate tweeter, IP67 waterproof & dustproof, PartyBoost, and 12hr playtime.",
+    "source": "local",
+    "identifiers": {"sku": "JBL-FLIP6", "upc": "050036384501"},
+    "specifications": {
+      "type": "Portable Wireless Bluetooth Speaker",
+      "sound_output_w": 30,
+      "battery_life_hours": 12,
+      "water_resistance": "IP67 Waterproof & Dustproof",
+      "bluetooth_version": "5.1"
+    }
+  },
+  {
+    "product_id": "spk-003",
+    "name": "boAt Stone 650 10W Bluetooth Speaker",
+    "brand": "boAt",
+    "model": "Stone 650",
+    "category": "speaker",
+    "subcategory": "budget_speaker",
+    "price": 1799,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80",
+    "description": "10W Stereo Sound portable speaker with powerful subwoofers, IPX5 water resistance, 7 hours battery life, and AUX/SD card playback.",
+    "source": "local",
+    "identifiers": {"sku": "BOAT-STONE650", "upc": "890546709812"},
+    "specifications": {
+      "type": "Portable Bluetooth Speaker",
+      "sound_output_w": 10,
+      "battery_life_hours": 7,
+      "water_resistance": "IPX5"
+    }
+  },
+  {
     "product_id": "net-001",
     "name": "ASUS RT-AX88U Pro Wi-Fi 6 Router",
     "brand": "ASUS",
@@ -477,6 +1075,48 @@
       "antennas": "4 External High-Gain Antennas",
       "processor": "2.0 GHz 64-bit Quad-Core CPU",
       "security": "WPA3 Enterprise + Trend Micro AiProtection Pro"
+    }
+  },
+  {
+    "product_id": "net-002",
+    "name": "TP-Link Archer AX55 Wi-Fi 6 Gigabit Router",
+    "brand": "TP-Link",
+    "model": "Archer AX55",
+    "category": "router",
+    "subcategory": "gigabit_router",
+    "price": 5499,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80",
+    "description": "Dual-Band Wi-Fi 6 Router up to 3000 Mbps (2402 Mbps on 5 GHz and 574 Mbps on 2.4 GHz), OFDMA, Qualcomm chipset, and HomeShield security.",
+    "source": "local",
+    "identifiers": {"sku": "TPL-AX55", "upc": "845973089012"},
+    "specifications": {
+      "wifi_standard": "Wi-Fi 6 (802.11ax)",
+      "bands": "Dual-Band (2.4 GHz + 5 GHz)",
+      "total_speed_mbps": 3000,
+      "ports": ["Gigabit WAN x1", "Gigabit LAN x4", "USB 3.0 x1"]
+    }
+  },
+  {
+    "product_id": "net-003",
+    "name": "TP-Link Archer AX12 Wi-Fi 6 Router",
+    "brand": "TP-Link",
+    "model": "Archer AX12",
+    "category": "router",
+    "subcategory": "budget_router",
+    "price": 2799,
+    "currency": "INR",
+    "availability": true,
+    "image_url": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80",
+    "description": "Dual-Band Wi-Fi 6 Router up to 1500 Mbps (1201 Mbps on 5 GHz and 300 Mbps on 2.4 GHz) with 4 high-gain antennas and Beamforming technology.",
+    "source": "local",
+    "identifiers": {"sku": "TPL-AX12", "upc": "845973089456"},
+    "specifications": {
+      "wifi_standard": "Wi-Fi 6 (802.11ax)",
+      "bands": "Dual-Band (2.4 GHz + 5 GHz)",
+      "total_speed_mbps": 1500,
+      "ports": ["Gigabit WAN x1", "Gigabit LAN x3"]
     }
   }
 ]

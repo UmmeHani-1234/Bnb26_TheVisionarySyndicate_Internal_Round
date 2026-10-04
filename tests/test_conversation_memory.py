@@ -168,3 +168,75 @@ def test_general_math_clean_response(client):
     assert "*" not in data["final_response"]
     assert "###" not in data["final_response"]
 
+
+def test_all_budget_tiers_suggestions(client):
+    """Verify that the chatbot provides valid suggestions across all budget tiers and electronics categories."""
+    budget_tests = [
+        ("phone under 15000", 15000),
+        ("phone under 25000", 25000),
+        ("phone under 60000", 60000),
+        ("earbuds under 2000", 2000),
+        ("earbuds under 5000", 5000),
+        ("headphones under 10000", 10000),
+        ("smartwatch under 2000", 2000),
+        ("smartwatch under 20000", 20000),
+        ("tv under 15000", 15000),
+        ("tv under 30000", 30000),
+        ("tv under 50000", 50000),
+        ("monitor under 10000", 10000),
+        ("monitor under 15000", 15000),
+        ("monitor under 30000", 30000),
+        ("tablet under 15000", 15000),
+        ("tablet under 30000", 30000),
+        ("router under 3000", 3000),
+        ("router under 6000", 6000),
+    ]
+
+    for query, max_budget in budget_tests:
+        cid = f"test-budget-{uuid.uuid4().hex[:8]}"
+        res = client.post("/agent/run", json={"request": query, "conversation_id": cid})
+        assert res.status_code == 200, f"Query failed for '{query}'"
+        body = res.json()
+        assert body["status"] == "success"
+        resp_text = body["final_response"]
+        assert "*" not in resp_text
+        assert "###" not in resp_text
+        assert "|---|" not in resp_text
+def test_contextual_follow_up_questions_and_budget_proximity(client):
+    """Verify that follow-up questions like 'whats the battery life' get specific answers and budget queries return closest matching options."""
+    cid = f"test-followup-{uuid.uuid4().hex[:8]}"
+
+    # 1. Ask for a phone under 60000 -> Should recommend OnePlus 12 (59999) closer to 60k
+    res1 = client.post("/agent/run", json={"request": "Suggest a smartphone under ₹60,000", "conversation_id": cid})
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert "OnePlus 12" in data1["final_response"] or "59,999" in data1["final_response"]
+    assert "Within budget" in data1["final_response"] or "saving" in data1["final_response"].lower()
+
+    # 2. Ask follow-up question: "whats the battery life"
+    res2 = client.post("/agent/run", json={"request": "whats the battery life", "conversation_id": cid})
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert "5400 mAh" in data2["final_response"] or "battery" in data2["final_response"].lower()
+    # Must NOT re-render the generic "I found a few options that match your requirements." card
+    assert "I found a few options that match your requirements." not in data2["final_response"]
+    assert "*" not in data2["final_response"]
+    assert "###" not in data2["final_response"]
+
+    # 3. Ask follow-up question: "what processor is inside?"
+    res3 = client.post("/agent/run", json={"request": "what processor is inside?", "conversation_id": cid})
+    assert res3.status_code == 200
+    data3 = res3.json()
+    assert "Snapdragon" in data3["final_response"]
+    assert "I found a few options that match your requirements." not in data3["final_response"]
+
+    # 4. Ask follow-up question: "how is the camera?"
+    res4 = client.post("/agent/run", json={"request": "how is the camera?", "conversation_id": cid})
+    assert res4.status_code == 200
+    data4 = res4.json()
+    assert "Camera" in data4["final_response"] or "camera" in data4["final_response"]
+    assert "I found a few options that match your requirements." not in data4["final_response"]
+
+
+
+

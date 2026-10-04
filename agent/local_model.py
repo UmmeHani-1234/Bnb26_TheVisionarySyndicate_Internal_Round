@@ -205,28 +205,45 @@ def _parse_query_intent(user_text: str, history_texts: Optional[List[str]] = Non
         else:
             budget = 50000
 
-    min_ram = _extract_ram(user_text)
-    if min_ram is None and history_texts:
-        min_ram = _extract_ram(full_context)
-
-    min_storage = _extract_storage(user_text)
-    if min_storage is None and history_texts:
-        min_storage = _extract_storage(full_context)
-
-    brand = _extract_brand(user_text)
-    if brand is None and history_texts:
-        brand = _extract_brand(full_context)
-
     user_cat = _detect_category(text_lower)
-    if any(w in text_lower for w in ["phone", "mobile", "smartphone", "tv", "monitor", "headphone", "earbud", "camera", "watch", "tablet", "speaker", "router", "laptop"]):
+    explicit_cat_mentioned = any(
+        w in text_lower
+        for w in [
+            "phone", "mobile", "smartphone", "iphone", "pixel", "galaxy",
+            "tv", "television", "monitor", "display", "screen",
+            "headphone", "earbud", "earphone", "audio", "airpods",
+            "camera", "watch", "smartwatch", "tablet", "ipad",
+            "speaker", "soundbar", "router", "wifi", "laptop", "notebook"
+        ]
+    )
+
+    if explicit_cat_mentioned:
         category = user_cat
     elif history_texts:
         category = _detect_category(context_lower)
     else:
         category = user_cat
 
-    needs_gaming = any(w in context_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated", "240hz", "144hz"])
-    needs_prog = any(w in context_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
+    # Only inherit hardware specs (RAM, storage) if category is unchanged or if mentioned in current message
+    min_ram = _extract_ram(user_text)
+    if min_ram is None and history_texts and not explicit_cat_mentioned:
+        min_ram = _extract_ram(full_context)
+
+    min_storage = _extract_storage(user_text)
+    if min_storage is None and history_texts and not explicit_cat_mentioned:
+        min_storage = _extract_storage(full_context)
+
+    brand = _extract_brand(user_text)
+    if brand is None and history_texts and not explicit_cat_mentioned:
+        brand = _extract_brand(full_context)
+
+    if category in ("laptop", "ultrabook", "gaming"):
+        needs_gaming = any(w in context_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated", "240hz", "144hz"])
+        needs_prog = any(w in context_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
+    else:
+        needs_gaming = any(w in text_lower for w in ["game", "gaming", "gamer"])
+        needs_prog = any(w in text_lower for w in ["programming", "coding", "developer"])
+
     needs_student = any(w in context_lower for w in ["student", "college", "school", "study", "assignments", "lecture", "university"])
     needs_portable = any(w in context_lower for w in ["portable", "lightweight", "slim", "battery", "travel", "ultrabook", "anc", "noise cancel"])
 
@@ -366,8 +383,36 @@ class LocalChatModel(BaseChatModel):
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
+        # Prioritize options closer to user budget ceiling if max budget specified
+        user_text_lower = user_text.lower()
+        if intent["budget"] and not any(w in user_text_lower for w in ["cheapest", "least expensive", "lowest price"]):
+            under_budget = [p for p in products if p.get("price", 0) <= intent["budget"]]
+            if under_budget:
+                # Sort descending: closest to budget ceiling first
+                under_budget.sort(key=lambda p: p.get("price", 0), reverse=True)
+                products = under_budget + [p for p in products if p not in under_budget]
+            else:
+                products.sort(key=lambda p: abs(intent["budget"] - p.get("price", 0)))
+
+        # Track previous product mentioned in conversation for contextual follow-up questions
+        prev_assistant_messages = [m for m in messages if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)]
+        prev_product_name = None
+        if prev_assistant_messages:
+            prev_content = str(prev_assistant_messages[-1].content)
+            for p in products:
+                p_name = p.get("name")
+                if p_name and p_name.lower() in prev_content.lower():
+                    prev_product_name = p_name
+                    break
+
         target_idx = intent.get("target_index", 0)
-        top_idx = target_idx if target_idx < len(products) else 0
+        if target_idx > 0:
+            top_idx = target_idx if target_idx < len(products) else 0
+        elif prev_product_name and not intent["budget"] and not any(w in user_text_lower for w in ["show me", "find", "search", "suggest", "recommend", "new"]):
+            top_idx = next((i for i, p in enumerate(products) if p.get("name") == prev_product_name), 0)
+        else:
+            top_idx = 0
+
         top_prod = products[top_idx]
         top_name = top_prod.get("name", "Product")
         runner_up = products[0] if top_idx != 0 else (products[1] if len(products) > 1 else None)
@@ -479,15 +524,63 @@ class LocalChatModel(BaseChatModel):
         else:
             why_fits = f"Provides the best performance-to-price balance available in our {category} catalogue."
 
-        user_text_lower = user_text.lower()
-        # Direct follow-up Q&A checks
-        if "how much ram" in user_text_lower and ("it" in user_text_lower or "this" in user_text_lower or "second" in user_text_lower):
-            ram_val = top_prod.get("ram_gb") or specs.get("ram_gb") or specs.get("ram") or 16
-            final_text = f"The {top_name} comes with {ram_val}GB RAM."
-        elif "good for gaming" in user_text_lower and ("it" in user_text_lower or "this" in user_text_lower or "second" in user_text_lower):
-            gpu_val = top_prod.get("gpu") or specs.get("gpu") or "dedicated graphics"
-            final_text = f"Yes, the {top_name} features {gpu_val} and is well-suited for gaming."
-        elif "compare" in user_text_lower and runner_up:
+        # Follow-up Q&A checks
+        is_follow_up_question = any(
+            w in user_text_lower
+            for w in [
+                "battery", "charging", "charger", "mah", "backup",
+                "ram", "memory", "storage", "ssd", "rom",
+                "processor", "cpu", "chip", "chipset", "soc",
+                "display", "screen", "resolution", "refresh rate", "hz", "oled", "amoled",
+                "camera", "megapixels", "photo", "video", "ois",
+                "gaming", "game", "games", "programming", "coding",
+                "os", "operating system", "sound", "anc", "noise cancellation",
+                "compare", "price", "how much", "cost", "second", "2nd", "third", "3rd"
+            ]
+        ) and not any(user_text_lower.startswith(p) for p in ["find ", "search ", "suggest ", "recommend "])
+
+        if any(w in user_text_lower for w in ["battery", "battery life", "backup", "mah", "charging", "charger", "fast charge", "how long will it last"]):
+            bat = specs.get("battery_mah")
+            bat_hours = specs.get("battery_life_hours")
+            charging = specs.get("fast_charging_w")
+            details = []
+            if bat:
+                details.append(f"{bat} mAh capacity")
+            if bat_hours:
+                details.append(f"up to {bat_hours} hours of battery life")
+            if charging:
+                details.append(f"{charging}W fast charging")
+            bat_summary = ", ".join(details) if details else "solid all-day battery life"
+            final_text = f"The {top_name} comes with a {bat_summary}, delivering reliable battery endurance for full-day productivity, streaming, and daily usage."
+        elif any(w in user_text_lower for w in ["how much ram", "what ram", "ram capacity", "ram size"]) or (user_text_lower.strip() in ["ram", "ram?"]):
+            ram_val = top_prod.get("ram_gb") or specs.get("ram_gb") or specs.get("ram") or 8
+            final_text = f"The {top_name} comes with {ram_val}GB RAM, ensuring smooth multitasking and responsive performance."
+        elif any(w in user_text_lower for w in ["how much storage", "storage", "ssd", "rom", "internal storage", "disk capacity"]) and not any(w in user_text_lower for w in ["find", "under"]):
+            storage_val = top_prod.get("storage_gb") or specs.get("storage_gb") or specs.get("storage") or 128
+            final_text = f"The {top_name} comes with {storage_val}GB of fast internal storage, giving you ample room for apps, documents, and media."
+        elif any(w in user_text_lower for w in ["processor", "cpu", "chip", "chipset", "soc"]):
+            proc_val = top_prod.get("processor") or specs.get("processor") or "high-performance processor"
+            final_text = f"The {top_name} is powered by the {proc_val}, offering fast multi-threaded performance and efficient power management."
+        elif any(w in user_text_lower for w in ["display", "screen", "resolution", "refresh rate", "hz", "oled", "amoled", "panel"]):
+            disp_val = specs.get("display") or (f"{specs.get('screen_size')}\" {specs.get('resolution', '')}" if specs.get("screen_size") else "high-resolution display")
+            final_text = f"The {top_name} features a {disp_val}, providing clear details, vivid colors, and smooth motion."
+        elif any(w in user_text_lower for w in ["camera", "megapixels", "mp", "photo", "photography", "video", "ois", "sensor"]):
+            cam_val = specs.get("camera") or "high-clarity camera sensor"
+            final_text = f"The {top_name} is equipped with a {cam_val}, capable of capturing sharp, balanced photos and stabilized video."
+        elif any(w in user_text_lower for w in ["good for gaming", "gaming performance", "can it game", "play games", "run games"]):
+            gpu_val = top_prod.get("gpu") or specs.get("gpu") or specs.get("processor") or "dedicated graphics processing"
+            final_text = f"Yes, the {top_name} features {gpu_val} and is well-suited for gaming with smooth framerates."
+        elif any(w in user_text_lower for w in ["good for programming", "coding", "software development", "developer"]):
+            proc_val = top_prod.get("processor") or specs.get("processor") or "multi-core CPU"
+            final_text = f"Yes, the {top_name} features a powerful {proc_val} and ample memory, making it an excellent choice for programming, code compilation, and development environments."
+        elif any(w in user_text_lower for w in ["os", "operating system", "android", "ios", "windows"]):
+            os_val = specs.get("os") or "latest operating system"
+            final_text = f"The {top_name} runs on {os_val}, ensuring modern software capabilities and reliable security."
+        elif any(w in user_text_lower for w in ["anc", "noise cancellation", "sound quality", "mic"]):
+            anc = specs.get("noise_cancellation")
+            anc_str = "Active Noise Cancellation" if anc else "clear sound reproduction"
+            final_text = f"The {top_name} features {anc_str} and high-fidelity sound tuning for an immersive audio experience."
+        elif any(w in user_text_lower for w in ["compare", "comparison", "difference between"]) and runner_up:
             r_name = runner_up.get("name")
             r_price = int(runner_up.get("price", 0))
             final_text = (

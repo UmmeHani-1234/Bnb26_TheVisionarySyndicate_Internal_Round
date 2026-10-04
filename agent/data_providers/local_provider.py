@@ -116,39 +116,42 @@ class LocalCatalogueProvider(ProductDataProvider):
         products = self.get_all_products()
         matches: List[NormalizedProduct] = []
 
-        target_category = None
+        target_category = "laptop"
         if filters.category:
             cat_raw = str(filters.category).strip().lower()
-            cat_map = {
-                "laptops": "laptop",
-                "notebook": "laptop",
-                "phones": "smartphone",
-                "phone": "smartphone",
-                "mobile": "smartphone",
-                "smartphones": "smartphone",
-                "monitors": "monitor",
-                "display": "monitor",
-                "displays": "monitor",
-                "screen": "monitor",
-                "tvs": "tv",
-                "television": "tv",
-                "smart_tv": "tv",
-                "headphone": "headphones",
-                "audio": "headphones",
-                "earphone": "headphones",
-                "earbuds": "earbuds",
-                "cameras": "camera",
-                "watch": "smartwatch",
-                "watches": "smartwatch",
-                "tablets": "tablet",
-                "ipad": "tablet",
-                "speakers": "speaker",
-                "soundbar": "speaker",
-                "routers": "router",
-                "networking": "router",
-                "wifi": "router",
-            }
-            target_category = cat_map.get(cat_raw, cat_raw)
+            if cat_raw in ("all", "electronics", "everything"):
+                target_category = None
+            else:
+                cat_map = {
+                    "laptops": "laptop",
+                    "notebook": "laptop",
+                    "phones": "smartphone",
+                    "phone": "smartphone",
+                    "mobile": "smartphone",
+                    "smartphones": "smartphone",
+                    "monitors": "monitor",
+                    "display": "monitor",
+                    "displays": "monitor",
+                    "screen": "monitor",
+                    "tvs": "tv",
+                    "television": "tv",
+                    "smart_tv": "tv",
+                    "headphone": "headphones",
+                    "audio": "headphones",
+                    "earphone": "headphones",
+                    "earbuds": "earbuds",
+                    "cameras": "camera",
+                    "watch": "smartwatch",
+                    "watches": "smartwatch",
+                    "tablets": "tablet",
+                    "ipad": "tablet",
+                    "speakers": "speaker",
+                    "soundbar": "speaker",
+                    "routers": "router",
+                    "networking": "router",
+                    "wifi": "router",
+                }
+                target_category = cat_map.get(cat_raw, cat_raw)
 
         for p in products:
             p_cat = p.category.lower()
@@ -159,7 +162,7 @@ class LocalCatalogueProvider(ProductDataProvider):
                 if target_category == "laptop":
                     if p_cat not in ("laptop", "gaming", "ultrabook", "budget") and p_sub != "laptop":
                         continue
-                elif p_cat != target_category and p_sub != target_category and target_category not in p_cat:
+                elif target_category not in p_cat and target_category not in p_sub and p_cat not in target_category:
                     continue
 
             # Brand match
@@ -192,15 +195,11 @@ class LocalCatalogueProvider(ProductDataProvider):
                 if storage is None or storage < filters.min_storage_gb:
                     continue
             if filters.needs_gaming:
-                if p_cat not in ("laptop", "gaming", "ultrabook", "budget") and p_sub != "laptop":
-                    continue
-                game_score = specs.get("gaming_suitability")
+                game_score = specs.get("gaming_suitability", 0)
                 if game_score is None or game_score < 3:
                     continue
             if filters.needs_programming:
-                if p_cat not in ("laptop", "gaming", "ultrabook", "budget") and p_sub != "laptop":
-                    continue
-                prog_score = specs.get("programming_suitability")
+                prog_score = specs.get("programming_suitability", 0)
                 if prog_score is None or prog_score < 3:
                     continue
 
