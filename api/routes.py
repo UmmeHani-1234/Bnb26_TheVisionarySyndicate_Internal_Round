@@ -34,9 +34,11 @@ class CreateEventRequest(BaseModel):
 
 
 class AgentRunRequest(BaseModel):
-    request: str = Field(description="Prompt for the Laptop Recommendation Agent")
+    request: str = Field(description="Prompt for the AI Electronics Product Consultant Agent")
     run_id: Optional[str] = Field(default=None, description="Optional custom run ID")
     failure_mode: Optional[str] = Field(default=None, description="Controlled failure injection mode")
+    history: Optional[List[Dict[str, Any]]] = Field(default=None, description="Prior conversation messages for context")
+    conversation_id: Optional[str] = Field(default=None, description="Unique conversation session ID for multi-turn memory")
 
 
 class ReplayRequest(BaseModel):
@@ -128,7 +130,12 @@ def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depen
     recorder = ExecutionRecorder(run_id=run_id, repository=repo)
 
     agent = LaptopAgent(sinks=[recorder.record])
-    agent_result = agent.run(body.request, failure_mode=body.failure_mode)
+    agent_result = agent.run(
+        body.request,
+        failure_mode=body.failure_mode,
+        history=body.history,
+        conversation_id=body.conversation_id,
+    )
 
     # Auto-create checkpoints for this run (Stage 5)
     trace = repo.get_run_trace(run_id)
@@ -151,6 +158,8 @@ def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depen
         "run_id": run_id,
         "status": agent_result.status,
         "final_response": agent_result.final_response,
+        "products": agent_result.products,
+        "conversation_id": agent_result.conversation_id,
         "trace": trace,
     }
 

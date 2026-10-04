@@ -7,6 +7,7 @@ import {
   EvaluationSummary,
   Product,
   SystemStatus,
+  AgentRunResponse,
 } from './types';
 
 const API_BASE = 'http://localhost:8000';
@@ -40,13 +41,14 @@ export const api = {
 
   getRun: (runId: string) => request<RunTrace>(`/runs/${runId}`),
 
-  runAgent: (req: { request: string; run_id?: string; failure_mode?: string }) =>
-    request<{
-      run_id: string;
-      status: string;
-      final_response: string;
-      trace: RunTrace;
-    }>('/agent/run', {
+  runAgent: (req: {
+    request: string;
+    run_id?: string;
+    failure_mode?: string;
+    history?: Array<{ role: string; content: string }>;
+    conversation_id?: string;
+  }) =>
+    request<AgentRunResponse>('/agent/run', {
       method: 'POST',
       body: JSON.stringify(req),
     }),

@@ -286,6 +286,8 @@ class AgentResult:
     final_response: str
     status: str  # "success" or "error"
     events: list[Event] = field(default_factory=list)
+    products: list[dict] = field(default_factory=list)  # structured product cards
+    conversation_id: Optional[str] = None
 
 
 def _message_text(content: Any) -> str:
@@ -310,8 +312,8 @@ def _final_text(result: dict) -> str:
     return ""
 
 
-class LaptopAgent:
-    """Controlled research/recommendation agent: one LLM, three local tools, observable events."""
+class ElectronicsAgent:
+    """Universal AI Electronics Product Consultant Agent: observable tools, multi-category support, multi-turn history."""
 
     def __init__(
         self,
@@ -327,7 +329,17 @@ class LaptopAgent:
         self.recursion_limit = recursion_limit
         self._graph = create_agent(model=self.llm, tools=self.tools, system_prompt=system_prompt)
 
-    def run(self, request: str, failure_mode: Optional[str] = None) -> AgentResult:
+    def run(
+        self,
+        request: str,
+        failure_mode: Optional[str] = None,
+        history: Optional[Sequence[Any]] = None,
+        conversation_id: Optional[str] = None,
+    ) -> AgentResult:
+        import uuid as _uuid
+
+        conv_id = conversation_id or str(_uuid.uuid4())
+
         old_mode = os.environ.get("FAILURE_MODE")
         if failure_mode:
             os.environ["FAILURE_MODE"] = failure_mode
@@ -338,15 +350,34 @@ class LaptopAgent:
         log.emit(EventType.AGENT_STARTED, summary="Agent started")
         log.emit(
             EventType.USER_REQUEST_RECEIVED,
-            input={"request": request},
+            input={"request": request, "has_history": bool(history), "conversation_id": conv_id},
             summary="User request received",
         )
 
         try:
             if not request or not request.strip():
                 raise ValueError("The request is empty.")
+
+            # Build full message history payload for multi-turn conversation
+            messages: list[dict[str, str]] = []
+            if history:
+                for m in history:
+                    if isinstance(m, dict):
+                        role = m.get("role", "user")
+                        content = m.get("content", "")
+                        norm_role = "user" if role in ("user", "human") else "assistant"
+                        if content and content.strip():
+                            messages.append({"role": norm_role, "content": content.strip()})
+                    elif hasattr(m, "content"):
+                        role_type = getattr(m, "type", "human")
+                        norm_role = "user" if role_type in ("human", "user") else "assistant"
+                        if m.content:
+                            messages.append({"role": norm_role, "content": str(m.content).strip()})
+
+            messages.append({"role": "user", "content": request.strip()})
+
             result = self._graph.invoke(
-                {"messages": [{"role": "user", "content": request}]},
+                {"messages": messages},
                 config={"callbacks": [EventCallbackHandler(log)], "recursion_limit": self.recursion_limit},
             )
             final_text = _final_text(result)
@@ -366,6 +397,7 @@ class LaptopAgent:
                 final_response=f"The agent could not complete this request. ({message})",
                 status="error",
                 events=log.events,
+                conversation_id=conv_id,
             )
         finally:
             if failure_mode:
@@ -376,9 +408,33 @@ class LaptopAgent:
                 if hasattr(self.llm, "failure_mode"):
                     self.llm.failure_mode = None
 
+        # Extract structured product data from tool events (for frontend product cards)
+        products: list[dict] = []
+        seen_names: set[str] = set()
+        for event in log.events:
+            output = getattr(event, "output", None)
+            if isinstance(output, dict) and output.get("status") == "success":
+                for p in output.get("products", []):
+                    if isinstance(p, dict):
+                        name = p.get("name", "")
+                        if name and name not in seen_names:
+                            seen_names.add(name)
+                            products.append(p)
+
         log.emit(
             EventType.FINAL_RESPONSE_GENERATED,
-            output={"response": final_text},
-            summary=f"Final response generated ({len(final_text)} characters)",
+            output={"response": final_text, "products_count": len(products)},
+            summary=f"Final response generated ({len(final_text)} characters, {len(products)} products)",
         )
-        return AgentResult(request=request, final_response=final_text, status="success", events=log.events)
+        return AgentResult(
+            request=request,
+            final_response=final_text,
+            status="success",
+            events=log.events,
+            products=products,
+            conversation_id=conv_id,
+        )
+
+
+# Alias for 100% backwards compatibility across existing routes, benchmarks and tests
+LaptopAgent = ElectronicsAgent

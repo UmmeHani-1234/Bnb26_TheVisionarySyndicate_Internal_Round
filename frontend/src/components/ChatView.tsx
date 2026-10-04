@@ -25,6 +25,7 @@ interface ChatMessage {
   status?: string;
   duration?: number;
   products?: Product[];
+  budgetMax?: number;
   failedStep?: {
     step_number: number;
     stage_name: string;
@@ -42,6 +43,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
   const [isLoading, setIsLoading] = useState(false);
   const [failureMode, setFailureMode] = useState<string>('none');
   const [liveStep, setLiveStep] = useState<string | null>(null);
+  // Stable conversation ID for the lifetime of this chat session
+  const conversationId = useRef<string>(`conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -54,24 +57,29 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
     scrollToBottom();
   }, [messages, liveStep]);
 
-  // Extract products mentioned in agent text
-  const matchProductsFromText = (text: string): Product[] => {
-    if (!text || catalogue.length === 0) return [];
-    const matched: Product[] = [];
-    const lowerText = text.toLowerCase();
-
-    for (const prod of catalogue) {
-      if (lowerText.includes(prod.name.toLowerCase())) {
-        matched.push(prod);
-      }
-    }
-    // Limit to top 4 matched cards
-    return matched.slice(0, 4);
+  /** Build the history array from all previous messages to send with each request */
+  const buildHistory = (currentMessages: ChatMessage[]): Array<{ role: string; content: string }> => {
+    return currentMessages.map((m) => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }));
   };
 
-  const handleSend = async (customText?: string) => {
+  /** Extract budget from user text (simple heuristic) */
+  const extractBudget = (text: string): number | undefined => {
+    const cleaned = text.replace(/,/g, '').replace(/₹/g, ' ');
+    const matches = cleaned.match(/\b(\d{4,7})\b/g);
+    if (!matches) return undefined;
+    const candidates = matches.map(Number).filter((n) => n >= 5000 && n <= 5000000);
+    return candidates.length > 0 ? Math.min(...candidates) : undefined;
+  };
+
+  const handleSend = async (customText?: string, overrideMode?: string) => {
     const textToSend = customText || inputText;
     if (!textToSend.trim() || isLoading) return;
+
+    const activeMode = overrideMode !== undefined ? overrideMode : failureMode;
+    const budgetMax = extractBudget(textToSend);
 
     const userMsgId = `msg-${Date.now()}`;
     const userMsg: ChatMessage = {
@@ -80,6 +88,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
       text: textToSend.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
+
+    // Capture current messages before state update for history building
+    const prevMessages = [...messages];
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
@@ -92,10 +103,16 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
     const stepTimer3 = setTimeout(() => setLiveStep('Step 4: Tool Execution & Verification'), 1100);
 
     try {
-      const modeParam = failureMode === 'none' ? undefined : failureMode;
+      const modeParam = activeMode === 'none' ? undefined : activeMode;
+
+      // Build full history from all previous messages + current user message
+      const history = buildHistory(prevMessages);
+
       const res = await api.runAgent({
         request: textToSend.trim(),
         failure_mode: modeParam,
+        history,
+        conversation_id: conversationId.current,
       });
 
       clearTimeout(stepTimer1);
@@ -109,26 +126,16 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
         const failed = res.trace.steps.find((s) => s.status === 'failed' || s.status === 'error');
         if (failed) {
           failedStepInfo = {
-            step_number: failed.step_number || 4,
-            stage_name: failed.stage || failed.step_type || 'Tool Execution',
+            step_number: (failed as any).step_number || 4,
+            stage_name: (failed as any).stage || failed.step_type || 'Tool Execution',
           };
         }
       }
 
-      // Check for products in final response or extracted state
-      let foundProducts: Product[] = matchProductsFromText(res.final_response);
-
-      // If text didn't match exact name, check trace steps
-      if (foundProducts.length === 0 && res.trace?.steps) {
-        for (const step of res.trace.steps) {
-          if (step.output && typeof step.output === 'object') {
-            if (Array.isArray(step.output.products)) {
-              foundProducts = step.output.products.slice(0, 4);
-              break;
-            }
-          }
-        }
-      }
+      // Prefer structured products from API; fall back to text-match against catalogue
+      let foundProducts: Product[] = res.products && res.products.length > 0
+        ? res.products
+        : catalogue.filter((p) => res.final_response.toLowerCase().includes(p.name.toLowerCase())).slice(0, 4);
 
       const agentMsg: ChatMessage = {
         id: `agent-${Date.now()}`,
@@ -140,6 +147,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
         status: res.status,
         duration: res.trace?.total_duration || 1.8,
         products: foundProducts,
+        budgetMax,
         failedStep: failedStepInfo,
       };
 
@@ -170,29 +178,30 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
     }
   };
 
+
   const samplePrompts = [
     {
       title: 'Programming Laptop',
-      desc: 'Under ₹80,000 with 16GB RAM',
+      desc: 'Under ₹80,000 · 16GB RAM',
       query: 'I need a laptop for programming under ₹80,000 with at least 16GB RAM.',
       mode: 'none',
     },
     {
-      title: 'Budget Student',
-      desc: 'Lightweight under ₹45,000',
-      query: 'Recommend a good student laptop under ₹45,000 for coursework.',
+      title: 'Smartphone Recommendation',
+      desc: 'Best phone under ₹30,000',
+      query: 'Which smartphone should I buy under ₹30,000 for everyday use and good camera?',
       mode: 'none',
     },
     {
-      title: 'Gaming & Performance',
-      desc: 'Dedicated GPU under ₹1,20,000',
-      query: 'Find a gaming laptop with high-end dedicated GPU under ₹1,20,000.',
+      title: 'Gaming Setup',
+      desc: 'Gaming laptop under ₹1,20,000',
+      query: 'Find a gaming laptop with dedicated GPU under ₹1,20,000.',
       mode: 'none',
     },
     {
       title: 'Controlled Failure Test',
       desc: 'Injected tool error for debugging',
-      query: 'Search for laptops under ₹70,000 for coding.',
+      query: 'Search for headphones with ANC under ₹15,000.',
       mode: 'wrong_tool',
     },
   ];
@@ -207,7 +216,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
             <div style={styles.heroBox}>
               <h1 style={styles.heroTitle}>Black Box</h1>
               <p style={styles.heroSubtitle}>
-                Debug your AI agent by watching what it actually does.
+                Ask me anything — or shop for electronics and I'll find the best options for you.
               </p>
             </div>
 
@@ -218,8 +227,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
                   key={idx}
                   style={styles.promptCard}
                   onClick={() => {
-                    setFailureMode(p.mode);
-                    handleSend(p.query);
+                    handleSend(p.query, p.mode);
                   }}
                 >
                   <div style={styles.promptCardHeader}>
@@ -276,49 +284,72 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
                   {msg.products && msg.products.length > 0 && (
                     <div style={styles.productsContainer}>
                       <div style={styles.productsGrid}>
-                        {msg.products.map((prod, idx) => (
-                          <div key={idx} style={styles.productCard}>
-                            <div style={styles.productImageWrapper}>
-                              {prod.image_url ? (
-                                <img
-                                  src={prod.image_url}
-                                  alt={prod.name}
-                                  style={styles.productImage}
-                                  onError={(e) => {
-                                    // Fallback to placeholder box
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.parentElement!.innerHTML =
-                                      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94A3B8;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>';
-                                  }}
-                                />
-                              ) : (
-                                <div style={styles.productImagePlaceholder}>
-                                  <LaptopIcon size={32} color="#94A3B8" />
+                        {msg.products.map((prod, idx) => {
+                          const withinBudget = msg.budgetMax == null || prod.price <= msg.budgetMax;
+                          const ram = prod.ram_gb ? `${prod.ram_gb}GB RAM` : prod.ram ? `${prod.ram} RAM` : null;
+                          const storage = prod.storage_gb ? `${prod.storage_gb}GB` : prod.storage || null;
+                          const category = prod.category?.toUpperCase() || 'ELECTRONICS';
+                          return (
+                            <div key={idx} style={styles.productCard}>
+                              <div style={styles.productImageWrapper}>
+                                {prod.image_url ? (
+                                  <img
+                                    src={prod.image_url}
+                                    alt={prod.name}
+                                    style={styles.productImage}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement!.innerHTML =
+                                        '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94A3B8;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>';
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={styles.productImagePlaceholder}>
+                                    <LaptopIcon size={32} color="#94A3B8" />
+                                  </div>
+                                )}
+                              </div>
+                              <div style={styles.productInfo}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', marginBottom: '2px' }}>
+                                  {category}
                                 </div>
-                              )}
+                                <div style={styles.productName} title={prod.name}>
+                                  {prod.name}
+                                </div>
+                                <div style={styles.productPrice}>
+                                  ₹{prod.price?.toLocaleString('en-IN')}
+                                </div>
+                                {(ram || storage) && (
+                                  <div style={styles.productSpecs}>
+                                    {ram && <span>{ram}</span>}
+                                    {ram && storage && <span>·</span>}
+                                    {storage && <span>{storage}</span>}
+                                  </div>
+                                )}
+                                {prod.processor && (
+                                  <div style={styles.productSubSpecs}>
+                                    {prod.processor}{prod.gpu ? ` · ${prod.gpu}` : ''}
+                                  </div>
+                                )}
+                                {prod.why_it_fits && (
+                                  <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '4px', lineHeight: 1.3 }}>
+                                    {prod.why_it_fits}
+                                  </div>
+                                )}
+                                <div style={{
+                                  ...styles.productBadge,
+                                  color: withinBudget ? '#16A34A' : '#DC2626',
+                                  backgroundColor: withinBudget ? '#F0FDF4' : '#FEF2F2',
+                                  borderColor: withinBudget ? '#BBF7D0' : '#FECACA',
+                                }}>
+                                  {withinBudget ? '✓ Within budget' : '⚠ Exceeds budget'}
+                                </div>
+                              </div>
                             </div>
-                            <div style={styles.productInfo}>
-                              <div style={styles.productName} title={prod.name}>
-                                {prod.name}
-                              </div>
-                              <div style={styles.productPrice}>
-                                ₹{prod.price?.toLocaleString('en-IN')}
-                              </div>
-                              <div style={styles.productSpecs}>
-                                <span>{prod.ram ? `${prod.ram} RAM` : '16GB RAM'}</span>
-                                <span>·</span>
-                                <span>{prod.storage || '512GB SSD'}</span>
-                              </div>
-                              <div style={styles.productSubSpecs}>
-                                {prod.processor} {prod.gpu ? `· ${prod.gpu}` : ''}
-                              </div>
-                              <div style={styles.productBadge}>✓ Within budget</div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
-                  )}
 
                   {/* Execution Connection Status Bridge */}
                   {msg.runId && (

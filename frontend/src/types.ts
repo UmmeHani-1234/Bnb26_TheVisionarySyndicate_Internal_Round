@@ -129,15 +129,27 @@ export interface Product {
   name: string;
   brand?: string;
   price: number;
-  processor: string;
-  ram: string | number;
-  storage: string;
+  processor?: string;
+  ram?: string | number;
+  ram_gb?: number;
+  storage?: string;
+  storage_gb?: number;
   gpu?: string;
   display?: string;
   rating?: number;
   category?: string;
   image_url?: string;
   description?: string;
+  // Extended fields for structured recommendations
+  specifications?: Record<string, any>;
+  why_it_fits?: string;
+  budget_status?: string;         // e.g. "Within budget" or "Above budget by ₹5,000"
+  within_budget?: boolean;
+  source?: string;                // "catalogue" | "live search"
+  availability?: string;
+  gaming_suitability?: number;
+  programming_suitability?: number;
+  dedicated_gpu?: boolean;
 }
 
 export interface SystemStatus {
@@ -147,3 +159,13 @@ export interface SystemStatus {
   agent: string;
   version: string;
 }
+
+export interface AgentRunResponse {
+  run_id: string;
+  status: string;
+  final_response: string;
+  products: Product[];
+  conversation_id: string;
+  trace: RunTrace;
+}
+

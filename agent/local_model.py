@@ -1,13 +1,11 @@
-"""Local offline and self-hosted models for the Black Box agent.
+"""Local offline and self-hosted models for the Black Box Electronics Consultant Agent.
 
 Provides:
-  1. LocalChatModel: A zero-dependency, 100% offline, zero-quota autonomous model that
-     intelligently parses user requests, generates appropriate tool calls
-     (search_products -> check_specifications -> calculate_budget), dynamically scores
-     and ranks candidate products based on user priorities, and synthesizes rich,
-     comparative recommendations with tradeoff analysis.
-  2. OllamaChatModel: Connects to a locally running Ollama instance
-     (http://localhost:11434) using standard library HTTP requests.
+  1. LocalChatModel: A zero-dependency, 100% offline, autonomous model that
+     intelligently parses user requests across all consumer electronics categories,
+     generates observable tool calls (search_products -> check_specifications -> calculate_budget),
+     handles general technical questions conversationally, and synthesizes structured recommendations.
+  2. OllamaChatModel: Connects to a locally running Ollama instance using HTTP requests.
 """
 
 import json
@@ -29,17 +27,14 @@ logger = logging.getLogger(__name__)
 def _extract_budget(text: str) -> Optional[int]:
     """Extract budget from user prompt, e.g. 70000, 70,000, 70k, 1 lakh, 40000."""
     text_lower = text.lower()
-    # Check for lakh (e.g., 1 lakh or 1.5 lakh)
     lakh_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac|l)\b", text_lower)
     if lakh_match:
         return int(float(lakh_match.group(1)) * 100_000)
 
-    # Check for 70k or 60k
     k_match = re.search(r"(\d+)\s*k\b", text_lower)
     if k_match:
         return int(k_match.group(1)) * 1000
 
-    # Check for ₹70,000 or 70000
     num_match = re.search(r"(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{3})+|\d{4,6})", text)
     if num_match:
         num_str = num_match.group(1).replace(",", "")
@@ -58,7 +53,7 @@ def _extract_ram(text: str) -> Optional[int]:
 
 
 def _extract_storage(text: str) -> Optional[int]:
-    """Extract minimum storage in GB from user prompt (e.g., 512gb, 1tb)."""
+    """Extract minimum storage in GB from user prompt."""
     text_lower = text.lower()
     tb_match = re.search(r"(\d+)\s*(?:tb|terabyte)", text_lower)
     if tb_match:
@@ -72,405 +67,142 @@ def _extract_storage(text: str) -> Optional[int]:
 def _extract_brand(text: str) -> Optional[str]:
     """Extract mentioned brand if any."""
     text_lower = text.lower()
-    for brand in ["samsung", "apple", "google", "oneplus", "xiaomi", "motorola", "nothing", "asus", "lenovo", "hp", "acer", "dell", "msi"]:
+    brands = [
+        "samsung", "apple", "google", "oneplus", "xiaomi", "motorola", "nothing",
+        "asus", "lenovo", "hp", "acer", "dell", "msi", "sony", "lg", "bose",
+        "fujifilm", "canon", "nikon", "sonos", "jbl", "tp-link", "logitech",
+    ]
+    for brand in brands:
         if re.search(rf"\b{brand}\b", text_lower):
             return brand
     return None
 
 
-def _parse_query_intent(user_text: str) -> dict[str, Any]:
-    """Extract structured intent and criteria from user text."""
+def _detect_category(text_lower: str) -> str:
+    """Detect product category from query text."""
+    if any(w in text_lower for w in ["monitor", "display", "screen", "refresh rate", "240hz", "144hz"]):
+        if not any(w in text_lower for w in ["laptop", "phone", "tv"]):
+            return "monitor"
+    if any(w in text_lower for w in ["tv", "television", "oled tv", "smart tv", "bravia"]):
+        return "tv"
+    if any(w in text_lower for w in ["headphone", "headphones", "earphone", "anc", "noise cancel"]):
+        return "headphones"
+    if any(w in text_lower for w in ["earbud", "earbuds", "airpods", "tws"]):
+        return "earbuds"
+    if any(w in text_lower for w in ["camera", "mirrorless", "dslr", "lens", "megapixels"]):
+        return "camera"
+    if any(w in text_lower for w in ["smartwatch", "watch", "apple watch", "galaxy watch", "fitness band"]):
+        return "smartwatch"
+    if any(w in text_lower for w in ["tablet", "ipad", "galaxy tab"]):
+        return "tablet"
+    if any(w in text_lower for w in ["speaker", "speakers", "soundbar", "sonos", "bluetooth speaker"]):
+        return "speaker"
+    if any(w in text_lower for w in ["router", "wifi", "wi-fi", "mesh", "networking"]):
+        return "router"
+    if any(w in text_lower for w in ["phone", "mobile", "smartphone", "iphone", "galaxy s", "galaxy a", "pixel", "handset"]):
+        return "smartphone"
+    return "laptop"
+
+
+def _is_general_chat(text: str) -> bool:
+    """Detect general conversational / informational query rather than explicit product recommendation."""
+    text_lower = text.strip().lower()
+    greetings = ["hi", "hello", "hey", "good morning", "good evening", "how are you", "who are you", "what can you do", "help"]
+    if text_lower in greetings or any(text_lower.startswith(g + " ") or text_lower.startswith(g + "!") for g in greetings):
+        if not _extract_budget(text) and not any(w in text_lower for w in ["need", "buy", "find", "suggest", "recommend", "under", "within"]):
+            return True
+
+    general_questions = [
+        "what is refresh rate", "what is oled", "oled vs ips", "how much ram",
+        "difference between intel and amd", "what is anc", "how does noise cancellation work",
+        "what is an ssd", "why is 16gb ram better", "explain 4k vs 2k"
+    ]
+    if any(q in text_lower for q in general_questions):
+        return True
+
+    if text_lower.startswith("what is") or text_lower.startswith("how does") or text_lower.startswith("explain "):
+        if not any(w in text_lower for w in ["find", "recommend", "suggest", "buy", "under", "best price"]):
+            return True
+
+    return False
+
+
+def _answer_general_chat(text: str) -> str:
+    """Provide a knowledgeable, friendly, concise technical answer as an electronics consultant."""
+    text_lower = text.lower()
+    if any(w in text_lower for w in ["hi", "hello", "hey", "who are you", "what can you do"]):
+        return (
+            "Hello! I am your AI Electronics Product Consultant. I can help you find, compare, and verify "
+            "specifications and budgets for laptops, smartphones, monitors, TVs, audio equipment, cameras, "
+            "smartwatches, tablets, and more from our catalogue. What kind of electronics are you looking for today?"
+        )
+    if "refresh rate" in text_lower or "hz" in text_lower:
+        return (
+            "**Display Refresh Rate (Hz)** refers to how many times per second the screen updates its image. "
+            "A standard display operates at **60Hz**, while gaming and high-fluidity monitors/phones run at "
+            "**120Hz, 144Hz, or 240Hz**. Higher refresh rates deliver significantly smoother motion, reduced eye fatigue, "
+            "and faster reaction times in games and UI navigation."
+        )
+    if "oled vs ips" in text_lower or "oled" in text_lower:
+        return (
+            "**OLED vs. IPS Panels:**\n\n"
+            "- **OLED (Organic LED)**: Each individual pixel emits its own light, delivering true absolute blacks, infinite contrast, and instant response times (<0.1ms). Perfect for cinematic media and dark-room gaming.\n"
+            "- **IPS (In-Plane Switching)**: Uses an LED backlight. It provides exceptional color accuracy and wide viewing angles at a more accessible price point, making it ideal for office productivity and graphic design."
+        )
+    if "ram" in text_lower:
+        return (
+            "**RAM Guidelines:**\n\n"
+            "- **8GB**: Suitable for everyday web browsing, office documents, and light multitasking.\n"
+            "- **16GB**: The sweet spot for modern software development, heavy browser tabs, and gaming.\n"
+            "- **32GB+**: Recommended for heavy video rendering, local machine learning models, and complex virtualization."
+        )
+    return (
+        f"As an electronics consultant, I can certainly assist with that! For {text.strip()}, our catalogue "
+        "contains options tailored to productivity, gaming, and creative workflows. Would you like me to recommend "
+        "specific products within a target budget?"
+    )
+
+
+def _parse_query_intent(user_text: str, history_texts: Optional[List[str]] = None) -> dict[str, Any]:
+    """Extract structured intent and criteria from user text and multi-turn conversation context."""
+    full_context = " ".join((history_texts or []) + [user_text])
     text_lower = user_text.lower()
-    budget = _extract_budget(user_text)
-    min_ram = _extract_ram(user_text)
-    min_storage = _extract_storage(user_text)
-    brand = _extract_brand(user_text)
+    context_lower = full_context.lower()
 
-    is_phone = any(w in text_lower for w in ["phone", "mobile", "smartphone", "iphone", "galaxy s", "galaxy a", "pixel", "handset"])
-    device_type = "phone" if is_phone else "laptop"
+    budget = _extract_budget(user_text) or _extract_budget(full_context)
+    min_ram = _extract_ram(user_text) or _extract_ram(full_context)
+    min_storage = _extract_storage(user_text) or _extract_storage(full_context)
+    brand = _extract_brand(user_text) or _extract_brand(full_context)
 
-    needs_gaming = any(w in text_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated"])
-    needs_prog = any(w in text_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
-    needs_student = any(w in text_lower for w in ["student", "college", "school", "study", "assignments", "lecture", "university"])
-    needs_portable = any(w in text_lower for w in ["portable", "lightweight", "slim", "battery", "travel", "ultrabook"])
+    category = _detect_category(text_lower)
+    if category == "laptop" and history_texts:
+        category = _detect_category(context_lower)
+
+    needs_gaming = any(w in context_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated", "240hz", "144hz"])
+    needs_prog = any(w in context_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
+    needs_student = any(w in context_lower for w in ["student", "college", "school", "study", "assignments", "lecture", "university"])
+    needs_portable = any(w in context_lower for w in ["portable", "lightweight", "slim", "battery", "travel", "ultrabook", "anc", "noise cancel"])
+
+    is_general = _is_general_chat(user_text)
 
     return {
         "budget": budget,
         "min_ram": min_ram,
         "min_storage": min_storage,
         "brand": brand,
-        "device_type": device_type,
+        "category": category,
+        "device_type": category,
         "needs_gaming": needs_gaming,
         "needs_programming": needs_prog,
         "needs_student": needs_student,
         "needs_portable": needs_portable,
+        "is_general_chat": is_general,
         "raw_text": user_text,
     }
 
 
-SMARTPHONES = [
-    # Premium Flagships (>= 1,00,000)
-    {
-        "name": "Samsung Galaxy S24 Ultra",
-        "price": 129999,
-        "brand": "samsung",
-        "processor": "Qualcomm Snapdragon 8 Gen 3 for Galaxy",
-        "ram": 12,
-        "storage": 256,
-        "display": '6.8" Dynamic AMOLED 2X (1-120Hz LTPO, 2600 nits, Gorilla Armor)',
-        "camera": "200MP Quad Camera with 5x & 10x Optical Periscope Zoom, S-Pen",
-        "battery": "5,000 mAh (45W Fast Charging)",
-        "perks": "Built-in S-Pen for handwriting lecture notes and annotating PDFs on glass, Samsung DeX for desktop computing, and titanium frame durability.",
-    },
-    {
-        "name": "Apple iPhone 15 Pro",
-        "price": 124900,
-        "brand": "apple",
-        "processor": "Apple A17 Pro (3nm)",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.1" Super Retina XDR OLED (120Hz ProMotion)',
-        "camera": "48MP Main + 12MP Ultra-wide + 12MP 3x Telephoto",
-        "battery": "3,274 mAh",
-        "perks": "Grade 5 Titanium design, Action Button for instant shortcuts (voice recorder, flashcards), and console-grade A17 Pro graphics performance.",
-    },
-    # High-End Flagships (60,000 - 85,000)
-    {
-        "name": "Samsung Galaxy S24",
-        "price": 74999,
-        "brand": "samsung",
-        "processor": "Samsung Exynos 2400 / Snapdragon 8 Gen 3",
-        "ram": 8,
-        "storage": 256,
-        "display": '6.2" Dynamic AMOLED 2X (120Hz LTPO, 2600 nits peak)',
-        "camera": "50MP Main (OIS) + 12MP Ultra-wide + 10MP 3x Telephoto",
-        "battery": "4,000 mAh (All-Day Battery)",
-        "perks": "Galaxy AI Note & Transcript Assist for lecture recording, Circle to Search for textbook homework, compact pocketable design, and 7 years of OS updates.",
-    },
-    {
-        "name": "Apple iPhone 15",
-        "price": 69900,
-        "brand": "apple",
-        "processor": "Apple A16 Bionic",
-        "ram": 6,
-        "storage": 128,
-        "display": '6.1" Super Retina XDR OLED (Dynamic Island)',
-        "camera": "48MP Main + 12MP Ultra-wide",
-        "battery": "3,349 mAh",
-        "perks": "Dynamic Island for live timers and alerts, universal USB-C charging, and seamless AirDrop integration with MacBooks and iPads.",
-    },
-    {
-        "name": "OnePlus 12",
-        "price": 64999,
-        "brand": "oneplus",
-        "processor": "Qualcomm Snapdragon 8 Gen 3",
-        "ram": 12,
-        "storage": 256,
-        "display": '6.82" 2K 120Hz ProXDR AMOLED (4500 nits)',
-        "camera": "50MP Sony LYT-808 + 64MP 3x Periscope Telephoto",
-        "battery": "5,400 mAh (100W SUPERVOOC Fast Charge)",
-        "perks": "100W rapid charging fully recharges the phone in 26 minutes, paired with ultra-smooth 120Hz performance for multitasking.",
-    },
-    {
-        "name": "Google Pixel 8",
-        "price": 62999,
-        "brand": "google",
-        "processor": "Google Tensor G3",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.2" Actua OLED (120Hz, 2000 nits)',
-        "camera": "50MP Main + 12MP Ultra-wide",
-        "battery": "4,575 mAh",
-        "perks": "Best-in-class Google AI Recorder with speaker labels for lecture capture, Magic Eraser, and 7 years of direct Android feature drops.",
-    },
-    # Upper Midrange (40,000 - 55,000)
-    {
-        "name": "Samsung Galaxy S23 FE",
-        "price": 49999,
-        "brand": "samsung",
-        "processor": "Samsung Exynos 2200",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.4" Dynamic AMOLED 2X (120Hz)',
-        "camera": "50MP OIS + 12MP Ultra-wide + 8MP 3x Telephoto",
-        "battery": "4,500 mAh",
-        "perks": "Flagship camera array with optical 3x zoom, bright AMOLED screen for campus reading, and Galaxy AI features comfortably within budget.",
-    },
-    {
-        "name": "Apple iPhone 13",
-        "price": 48999,
-        "brand": "apple",
-        "processor": "Apple A15 Bionic",
-        "ram": 4,
-        "storage": 128,
-        "display": '6.1" Super Retina XDR OLED',
-        "camera": "12MP Dual Cameras with Photographic Styles",
-        "battery": "3,227 mAh",
-        "perks": "Reliable Apple ecosystem integration, fluid performance, and durable Ceramic Shield construction under ₹50,000.",
-    },
-    {
-        "name": "OnePlus 12R",
-        "price": 39999,
-        "brand": "oneplus",
-        "processor": "Qualcomm Snapdragon 8 Gen 2",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.78" 1.5K 120Hz LTPO4 AMOLED (4500 nits)',
-        "camera": "50MP Sony IMX890 OIS",
-        "battery": "5,500 mAh (100W SUPERVOOC)",
-        "perks": "Massive 5,500 mAh battery that easily lasts 1.5 days of classes, Snapdragon 8 Gen 2 flagship speed, and 100W charging.",
-    },
-    {
-        "name": "Samsung Galaxy A55 5G",
-        "price": 39999,
-        "brand": "samsung",
-        "processor": "Samsung Exynos 1480",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.6" Super AMOLED (120Hz, Gorilla Glass Victus+)',
-        "camera": "50MP OIS + 12MP Ultra-wide + 5MP Macro",
-        "battery": "5,000 mAh",
-        "perks": "Premium metal frame, IP67 dust/water resistance for college commutes, 4 OS updates, and exceptional 2-day battery endurance.",
-    },
-    {
-        "name": "Nothing Phone (2)",
-        "price": 36999,
-        "brand": "nothing",
-        "processor": "Qualcomm Snapdragon 8+ Gen 1",
-        "ram": 12,
-        "storage": 256,
-        "display": '6.7" LTPO OLED (120Hz)',
-        "camera": "50MP Sony IMX890 + 50MP Ultra-wide",
-        "battery": "4,700 mAh",
-        "perks": "Unique Glyph Interface for silent class notifications, clean bloatware-free Nothing OS, and snappy flagship processor.",
-    },
-    # Budget / Value Tier (20,000 - 35,000)
-    {
-        "name": "Samsung Galaxy A35 5G",
-        "price": 27999,
-        "brand": "samsung",
-        "processor": "Samsung Exynos 1380",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.6" Super AMOLED (120Hz)',
-        "camera": "50MP Main OIS + 8MP Ultra-wide",
-        "battery": "5,000 mAh",
-        "perks": "Long-lasting 5,000 mAh battery that easily powers through study marathons, paired with a bright 120Hz AMOLED display.",
-    },
-    {
-        "name": "OnePlus Nord CE4",
-        "price": 24999,
-        "brand": "oneplus",
-        "processor": "Qualcomm Snapdragon 7 Gen 3",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.7" Fluid AMOLED (120Hz)',
-        "camera": "50MP Sony LYT-600 OIS",
-        "battery": "5,500 mAh (100W SUPERVOOC)",
-        "perks": "Unbeatable battery endurance and 100W fast charging under ₹25,000, perfect for budget-conscious students.",
-    },
-    {
-        "name": "Redmi Note 13 Pro 5G",
-        "price": 24999,
-        "brand": "xiaomi",
-        "processor": "Qualcomm Snapdragon 7s Gen 2",
-        "ram": 8,
-        "storage": 128,
-        "display": '6.67" 1.5K AMOLED (120Hz)',
-        "camera": "200MP OIS Ultra-Clear Camera",
-        "battery": "5,100 mAh (67W Turbo Charge)",
-        "perks": "High-resolution 1.5K display for reading PDFs and textbooks with crystal-clear text, and 200MP camera.",
-    },
-    {
-        "name": "Samsung Galaxy M34 5G",
-        "price": 16999,
-        "brand": "samsung",
-        "processor": "Samsung Exynos 1280",
-        "ram": 6,
-        "storage": 128,
-        "display": '6.5" Super AMOLED (120Hz)',
-        "camera": "50MP OIS Main Camera",
-        "battery": "6,000 mAh",
-        "perks": "Monstrous 6,000 mAh battery that lasts up to 3 days without a charger, paired with Samsung Knox security.",
-    },
-]
-
-
-def _recommend_smartphone(intent: dict[str, Any]) -> str:
-    """Select and synthesize the best smartphone strictly respecting user budget and preferences."""
-    user_budget = intent.get("budget") or 80000
-    brand = (intent.get("brand") or "").lower()
-    raw = intent.get("raw_text", "").lower()
-
-    candidates = SMARTPHONES
-
-    # 1. Filter by brand if specified
-    if brand:
-        brand_matches = [p for p in candidates if p["brand"] == brand]
-        if brand_matches:
-            candidates = brand_matches
-    elif "samsung" in raw or "galaxy" in raw:
-        brand_matches = [p for p in candidates if p["brand"] == "samsung"]
-        if brand_matches:
-            candidates = brand_matches
-    elif "iphone" in raw or "apple" in raw:
-        brand_matches = [p for p in candidates if p["brand"] == "apple"]
-        if brand_matches:
-            candidates = brand_matches
-
-    # 2. Strict budget filtering: ALWAYS prioritize devices within user budget
-    within_budget = [p for p in candidates if p["price"] <= user_budget]
-    is_over_budget = False
-
-    if within_budget:
-        # Sort by price descending to get the best feature-packed device within the budget
-        within_budget.sort(key=lambda p: p["price"], reverse=True)
-        top = within_budget[0]
-        runner_up = within_budget[1] if len(within_budget) > 1 else None
-    else:
-        # No options under budget! Fall back to closest available and flag clearly
-        is_over_budget = True
-        candidates_sorted = sorted(candidates, key=lambda p: abs(p["price"] - user_budget))
-        top = candidates_sorted[0]
-        runner_up = candidates_sorted[1] if len(candidates_sorted) > 1 else None
-
-    price = top["price"]
-    top_name = top["name"]
-    cpu = top["processor"]
-    display = top["display"]
-    ram = top["ram"]
-    storage = top["storage"]
-    camera = top["camera"]
-    battery = top["battery"]
-    perks = top["perks"]
-
-    diff = user_budget - price
-    if diff >= 0:
-        savings_text = f"saving ₹{diff:,} under budget"
-        status_label = "Within Budget"
-        diff_str = f"+₹{diff:,}"
-    else:
-        savings_text = f"over budget by ₹{-diff:,}"
-        status_label = "Over Budget"
-        diff_str = f"-₹{-diff:,}"
-
-    # Runner-up alternative section
-    runner_up_section = ""
-    if runner_up:
-        r_name = runner_up["name"]
-        r_price = runner_up["price"]
-        r_diff = abs(price - r_price)
-        if r_price < price:
-            r_delta = f"₹{r_diff:,} cheaper"
-        else:
-            r_delta = f"₹{r_diff:,} more"
-
-        runner_up_section = (
-            f"### 🔄 Alternative Option to Consider\n"
-            f"- **{r_name}** at **₹{r_price:,}** ({r_delta})\n"
-            f"  - Specs: {runner_up['processor']} | {runner_up['ram']}GB RAM | {runner_up['storage']}GB Storage | {runner_up['battery']}\n"
-            f"  - *Comparison:* A solid option if you want to optimize your spend while maintaining dependable performance.\n\n"
-        )
-
-    notice = ""
-    if is_over_budget:
-        notice = (
-            f"> ⚠️ **Budget Notice**: No reliable smartphones matching your criteria were found strictly within "
-            f"₹{user_budget:,}. The **{top_name}** at ₹{price:,} is the closest available match in this category.\n\n"
-        )
-
-    return (
-        f"Based on your requirements, the top smartphone recommendation is the **{top_name}**.\n\n"
-        f"{notice}"
-        f"### 📱 Top Recommendation: **{top_name}**\n"
-        f"- **Price**: ₹{price:,} ({savings_text})\n"
-        f"- **Processor**: {cpu}\n"
-        f"- **Display**: {display}\n"
-        f"- **Memory & Storage**: {ram}GB RAM | {storage}GB Storage\n"
-        f"- **Camera**: {camera}\n"
-        f"- **Battery**: {battery}\n\n"
-        f"### 💡 Why This Fits Your College & Daily Needs\n"
-        f"- {perks}\n\n"
-        f"{runner_up_section}"
-        f"### 💰 Budget & Value Summary\n"
-        f"- **Target Budget**: ₹{user_budget:,}\n"
-        f"- **Actual Price**: ₹{price:,}\n"
-        f"- **Difference**: {diff_str} ({status_label})\n\n"
-        f"*(Note: Our local catalogue tools specialize in laptops; this smartphone recommendation is drawn from current flagship hardware benchmarks to fulfill your exact phone request).* "
-    )
-
-
-def _score_laptop(laptop: dict[str, Any], intent: dict[str, Any]) -> float:
-    """Score a laptop candidate based on user priorities and constraints."""
-    score = 50.0  # base score
-    name = laptop.get("name", "").lower()
-    raw_price = laptop.get("price")
-    price = float(raw_price) if raw_price is not None else 0.0
-    ram = laptop.get("ram_gb") or 8
-    storage = laptop.get("storage_gb") or 256
-    gaming_score = laptop.get("gaming_suitability") or 1
-    prog_score = laptop.get("programming_suitability") or 1
-    category = laptop.get("category", "")
-    has_gpu = bool(laptop.get("dedicated_gpu", False))
-
-    # 1. Brand match
-    if intent.get("brand") and intent["brand"] in name:
-        score += 45.0
-
-    # 2. Gaming priority
-    if intent.get("needs_gaming"):
-        score += gaming_score * 12.0
-        if has_gpu:
-            score += 25.0
-        if "rtx" in laptop.get("gpu", "").lower():
-            score += 15.0
-
-    # 3. Programming priority
-    if intent.get("needs_programming"):
-        score += prog_score * 12.0
-        if ram >= 16:
-            score += 20.0
-        if storage >= 512:
-            score += 10.0
-
-    # 4. Student / College priority
-    if intent.get("needs_student"):
-        # For college, 512GB SSD is a massive upgrade over 256GB
-        if storage >= 512:
-            score += 25.0
-        # Modern multi-core CPU
-        if any(cpu in laptop.get("processor", "").lower() for cpu in ["i5", "ryzen 5", "i7", "ryzen 7"]):
-            score += 15.0
-        if category in ("budget", "ultrabook"):
-            score += 10.0
-
-    # 5. Portability priority
-    if intent.get("needs_portable"):
-        if category == "ultrabook":
-            score += 30.0
-        elif not has_gpu:
-            score += 10.0
-
-    # 6. Budget efficiency: reward getting the best performance within the user's budget ceiling
-    budget = intent.get("budget")
-    if budget and budget > 0:
-        if price <= budget:
-            ratio = price / budget
-            score += ratio * 15.0
-        else:
-            score -= 100.0
-
-    return score
-
-
 class LocalChatModel(BaseChatModel):
-    """Zero-quota, zero-cost, fully autonomous local chat model.
-    
-    Dynamically analyzes user requests, selects appropriate search criteria,
-    intelligently scores and ranks catalog options, verifies specs and budget
-    via tools, and generates rich, multi-dimensional comparative recommendations.
-    Supports reproducible failure injection via failure_mode or FAILURE_MODE env var.
-    """
+    """Zero-quota, zero-cost, fully autonomous local chat model for all electronics categories."""
 
     model_name: str = "blackbox-local-offline"
     failure_mode: Optional[str] = None
@@ -491,53 +223,64 @@ class LocalChatModel(BaseChatModel):
     ) -> ChatResult:
         mode = (self.failure_mode or os.getenv("FAILURE_MODE") or "none").strip().lower()
 
-        # 1. Identify the user's initial request
-        user_text = ""
-        for msg in messages:
-            if isinstance(msg, HumanMessage):
-                user_text = str(msg.content)
+        # Extract all user texts and latest message
+        user_texts = [str(m.content) for m in messages if isinstance(m, HumanMessage)]
+        user_text = user_texts[-1] if user_texts else ""
+        history_texts = user_texts[:-1] if len(user_texts) > 1 else []
 
-        intent = _parse_query_intent(user_text)
+        intent = _parse_query_intent(user_text, history_texts)
 
-        # 2. Inspect what tools have been executed so far
+        # Handle general non-product chat directly if no tools have been called
         tool_messages: list[ToolMessage] = [m for m in messages if isinstance(m, ToolMessage)]
         executed_tool_names = [getattr(m, "name", "") for m in tool_messages]
+
+        if intent["is_general_chat"] and not executed_tool_names and mode == "none":
+            answer = _answer_general_chat(user_text)
+            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=answer))])
 
         # Injected Failure A: wrong_tool -> select inappropriate tool first
         if mode == "wrong_tool" and not executed_tool_names:
             call_id = f"call_{uuid4().hex[:8]}"
             msg = AIMessage(
-                content="Checking specifications directly for non-existent laptop without prior search.",
+                content="Checking specifications directly for non-existent product without prior search.",
                 tool_calls=[{
                     "name": "check_specifications",
-                    "args": {"product_name": "NonExistentLaptop", "min_ram_gb": 32},
+                    "args": {"product_name": "NonExistentDevice", "min_ram_gb": 32},
                     "id": call_id,
                     "type": "tool_call",
                 }],
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        # Stage 1: No tools called yet -> Call search_products with adaptive criteria
+        # Stage 1: Call search_products
         if "search_products" not in executed_tool_names:
             search_args: dict[str, Any] = {}
+            cat = intent["category"]
+            if cat and cat != "laptop":
+                search_args["category"] = cat
+
             if intent["budget"]:
                 search_args["max_price"] = intent["budget"]
-            if intent["min_ram"]:
-                search_args["min_ram_gb"] = intent["min_ram"]
-            if intent["min_storage"]:
-                search_args["min_storage_gb"] = intent["min_storage"]
-            if intent["needs_gaming"]:
-                search_args["needs_gaming"] = True
-            if intent["needs_programming"]:
-                search_args["needs_programming"] = True
+            if intent["brand"]:
+                search_args["brand"] = intent["brand"]
 
-            text_lower = user_text.lower()
-            if "budget" in text_lower and not intent["needs_gaming"]:
-                search_args["category"] = "budget"
+            if cat == "laptop":
+                if intent["min_ram"]:
+                    search_args["min_ram_gb"] = intent["min_ram"]
+                if intent["min_storage"]:
+                    search_args["min_storage_gb"] = intent["min_storage"]
+                if intent["needs_gaming"]:
+                    search_args["needs_gaming"] = True
+                if intent["needs_programming"]:
+                    search_args["needs_programming"] = True
+
+                text_lower = user_text.lower()
+                if "budget" in text_lower and not intent["needs_gaming"]:
+                    search_args["category"] = "budget"
 
             call_id = f"call_{uuid4().hex[:8]}"
             msg = AIMessage(
-                content="I will search our product catalogue to find laptops matching your criteria.",
+                content=f"Searching our electronics catalogue for {cat} matching your criteria.",
                 tool_calls=[{
                     "name": "search_products",
                     "args": search_args,
@@ -547,7 +290,7 @@ class LocalChatModel(BaseChatModel):
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        # Stage 2: Parse returned products and perform intelligent multi-factor ranking
+        # Stage 2: Parse search_products output
         search_msg = next((m for m in tool_messages if getattr(m, "name", "") == "search_products"), None)
         products = []
         if search_msg:
@@ -559,44 +302,43 @@ class LocalChatModel(BaseChatModel):
             except Exception:
                 products = []
 
-        # If the user specifically requested a smartphone/phone
-        if intent.get("device_type") == "phone":
-            phone_text = _recommend_smartphone(intent)
-            msg = AIMessage(content=phone_text)
-            return ChatResult(generations=[ChatGeneration(message=msg)])
-
         if not products:
+            cat_name = intent["category"] or "products"
             msg = AIMessage(
                 content=(
-                    f"I searched our catalogue for criteria matching \"{user_text}\", but could not find any laptops "
-                    "meeting all specified constraints. Please consider increasing your budget or relaxing specific "
-                    "hardware requirements such as RAM or dedicated graphics."
+                    f"I couldn't find an option that satisfies all of your requirements for {cat_name} within the available catalogue. "
+                    "You might want to consider adjusting your budget ceiling or relaxing specific specification filters."
                 )
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        # Rank all matched products dynamically
-        ranked_products = sorted(products, key=lambda p: _score_laptop(p, intent), reverse=True)
-        top_laptop = ranked_products[0]
-        runner_up = ranked_products[1] if len(ranked_products) > 1 else None
-        top_name = top_laptop.get("name", "Laptop")
+        top_prod = products[0]
+        top_name = top_prod.get("name", "Product")
+        runner_up = products[1] if len(products) > 1 else None
 
-        # Stage 3: Call check_specifications for the top candidate
+        # Stage 3: Call check_specifications for top candidate
         if "check_specifications" not in executed_tool_names:
             specs_args: dict[str, Any] = {"product_name": top_name}
-            if intent["min_ram"]:
-                specs_args["min_ram_gb"] = intent["min_ram"]
-            else:
-                specs_args["min_ram_gb"] = top_laptop.get("ram_gb", 8)
+            if intent["category"] == "laptop":
+                if intent["min_ram"]:
+                    specs_args["min_ram_gb"] = intent["min_ram"]
+                else:
+                    specs_args["min_ram_gb"] = top_prod.get("ram_gb", 8)
 
-            if intent["min_storage"]:
-                specs_args["min_storage_gb"] = intent["min_storage"]
-            if intent["needs_gaming"]:
-                specs_args["min_gaming_score"] = 3
-                if top_laptop.get("dedicated_gpu"):
-                    specs_args["requires_dedicated_gpu"] = True
-            if intent["needs_programming"]:
-                specs_args["min_programming_score"] = 3
+                if intent["min_storage"]:
+                    specs_args["min_storage_gb"] = intent["min_storage"]
+                if intent["needs_gaming"]:
+                    specs_args["min_gaming_score"] = 3
+                    if top_prod.get("dedicated_gpu"):
+                        specs_args["requires_dedicated_gpu"] = True
+                if intent["needs_programming"]:
+                    specs_args["min_programming_score"] = 3
+            elif intent["category"] in ("monitor", "tv"):
+                specs_args["screen_size_min"] = 24.0
+            elif intent["category"] in ("headphones", "earbuds"):
+                specs_args["requires_noise_cancellation"] = True
+            else:
+                specs_args["min_ram_gb"] = top_prod.get("ram_gb", 8)
 
             call_id = f"call_{uuid4().hex[:8]}"
             msg = AIMessage(
@@ -610,9 +352,10 @@ class LocalChatModel(BaseChatModel):
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        # Stage 4: Call calculate_budget for the top candidate
+        # Stage 4: Call calculate_budget for top candidate
         if "calculate_budget" not in executed_tool_names:
-            budget = intent["budget"] or top_laptop.get("price", 75000)
+            raw_price = top_prod.get("price", 50000)
+            budget = intent["budget"] or raw_price
             call_id = f"call_{uuid4().hex[:8]}"
             msg = AIMessage(
                 content=f"Checking budget fit for {top_name}.",
@@ -625,106 +368,82 @@ class LocalChatModel(BaseChatModel):
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        # Stage 5: Synthesize rich, dynamic, multi-factor recommendation
-        budget_msg = next((m for m in tool_messages if getattr(m, "name", "") == "calculate_budget"), None)
-        budget_info = {}
-        if budget_msg:
-            try:
-                b_content = budget_msg.content
-                budget_info = json.loads(b_content) if isinstance(b_content, str) else (b_content or {})
-            except Exception:
-                budget_info = {}
-
-        raw_price = top_laptop.get("price")
+        # Stage 5: Synthesize final response
+        raw_price = top_prod.get("price", 0)
         price = int(raw_price) if raw_price is not None else 0
-        ram = top_laptop.get("ram_gb") or 8
-        storage = top_laptop.get("storage_gb") or 256
-        cpu = top_laptop.get("processor", "Unknown CPU")
-        gpu = top_laptop.get("gpu", "Integrated Graphics")
-        category = top_laptop.get("category", "General")
-        prog_stars = "★" * (top_laptop.get("programming_suitability") or 3)
-        game_stars = "★" * (top_laptop.get("gaming_suitability") or 1)
 
-        # Injected Failure B: wrong_interpretation -> tool returned price X, agent states Y
-        # Injected Failure C: budget_violation -> agent selects product that exceeds budget
+        # Injected failures handling
         if mode == "budget_violation":
             top_name = "Dell XPS 13"
             price = 84990
-            cpu = "Intel Core i7-1360P"
-            gpu = "Intel Iris Xe"
-            ram = 16
-            storage = 512
         elif mode == "wrong_interpretation":
-            price = 85000  # Tool returned 64990 or 58990, but agent states 85000
+            price = 85000
 
         user_budget = intent["budget"] or price or 0
         diff = user_budget - price
         savings_text = f"saving ₹{diff:,} under budget" if diff >= 0 else f"over budget by ₹{-diff:,}"
+        budget_status = "Within budget" if diff >= 0 else f"Above budget by ₹{-diff:,}"
 
-        # Context-specific reasoning paragraph
-        reasons: list[str] = []
-        if intent["needs_student"]:
-            reasons.append(
-                f"Its **{cpu}** processor and **{storage}GB SSD** provide ample responsiveness and disk space "
-                "for coursework, academic software, research, and multitasking across browser tabs without slowdowns."
-            )
-        if intent["needs_programming"]:
-            reasons.append(
-                f"With a **{prog_stars} ({top_laptop.get('programming_suitability', 3)}/5)** programming suitability score, "
-                f"the **{ram}GB RAM** and multi-core CPU handle compiler workloads, developer IDEs, and local containers reliably."
-            )
-        if intent["needs_gaming"]:
-            reasons.append(
-                f"Equipped with **{gpu}**, it delivers a **{game_stars} ({top_laptop.get('gaming_suitability', 1)}/5)** "
-                "gaming score, making it capable of handling modern games at smooth framerates."
-            )
-        if not reasons:
-            reasons.append(
-                f"The combination of **{cpu}**, **{ram}GB RAM**, and **{storage}GB SSD** offers the best price-to-performance "
-                "balance available in this tier."
-            )
+        # Category-aware spec summary and rationale
+        category = (top_prod.get("category") or intent["category"] or "Electronics").lower()
+        specs = top_prod.get("specifications", {})
 
-        reasoning_str = " ".join(reasons)
+        spec_lines = []
+        if "processor" in top_prod or "processor" in specs:
+            spec_lines.append(f"- Processor: {top_prod.get('processor') or specs.get('processor')}")
+        if "ram_gb" in top_prod or "ram_gb" in specs or "ram" in specs:
+            spec_lines.append(f"- RAM: {top_prod.get('ram_gb') or specs.get('ram_gb') or specs.get('ram')}GB")
+        if "storage_gb" in top_prod or "storage_gb" in specs or "storage" in specs:
+            spec_lines.append(f"- Storage: {top_prod.get('storage_gb') or specs.get('storage_gb') or specs.get('storage')}GB")
+        if "screen_size" in specs:
+            spec_lines.append(f"- Display: {specs.get('screen_size')}\" {specs.get('resolution', '')} ({specs.get('panel_type', '')})")
+        elif "display" in specs:
+            spec_lines.append(f"- Display: {specs.get('display')}")
+        if "gpu" in top_prod or "gpu" in specs:
+            spec_lines.append(f"- Graphics: {top_prod.get('gpu') or specs.get('gpu')}")
+        if "noise_cancellation" in specs:
+            spec_lines.append(f"- Active Noise Cancellation: {'Yes (Industry Leading)' if specs.get('noise_cancellation') else 'No'}")
+        if "camera" in specs:
+            spec_lines.append(f"- Camera: {specs.get('camera')}")
+        if "battery_mah" in specs:
+            spec_lines.append(f"- Battery: {specs.get('battery_mah')} mAh")
 
-        # Alternative runner-up section
+        spec_block = "\n".join(spec_lines) if spec_lines else f"- Category: {category.title()}\n- Model: {top_name}"
+
+        # Rationale
+        if intent["needs_programming"] and category in ("laptop", "ultrabook", "gaming"):
+            why_fits = (
+                f"With high suitability for developer workflows, the system provides reliable multi-core processing "
+                f"and disk throughput for compiling code, running local containers, and developer IDEs."
+            )
+        elif intent["needs_gaming"]:
+            why_fits = "Delivers high framerates and fluid motion for modern gaming and visual workloads."
+        elif intent["needs_student"]:
+            why_fits = "Offers great day-to-day responsiveness, ample disk space for coursework, and reliable battery life."
+        else:
+            why_fits = f"Provides the best performance-to-price balance available in our {category} catalogue."
+
         alt_section = ""
         if runner_up and mode not in ("budget_violation", "wrong_interpretation"):
             r_name = runner_up.get("name")
-            r_price = runner_up.get("price", 0)
-            r_cpu = runner_up.get("processor")
-            r_storage = runner_up.get("storage_gb")
-            r_ram = runner_up.get("ram_gb")
-            price_delta = abs(price - r_price)
-            if r_price < price:
-                delta_str = f"₹{price_delta:,} cheaper"
-            else:
-                delta_str = f"₹{price_delta:,} more"
-
+            r_price = int(runner_up.get("price", 0))
             alt_section = (
                 f"\n\n### 🔄 Alternative Option to Consider\n"
-                f"- **{r_name}** at **₹{r_price:,}** ({delta_str})\n"
-                f"  - Specs: {r_cpu} | {r_ram}GB RAM | {r_storage}GB SSD\n"
-                f"  - *Comparison:* A solid alternative if you want to adjust your budget balance or prefer {runner_up.get('category')} styling."
+                f"- **{r_name}** at **₹{r_price:,}**\n"
+                f"  - *Comparison:* A solid alternative if you wish to balance features or adjust your spend."
             )
 
         final_text = (
-            f"Based on your requirements, the best match from our catalogue is the **{top_name}**.\n\n"
-            f"### 📋 Top Recommendation: **{top_name}**\n"
-            f"- **Price**: ₹{price:,} ({savings_text})\n"
-            f"- **Processor**: {cpu}\n"
-            f"- **Graphics**: {gpu}\n"
-            f"- **Memory**: {ram}GB RAM\n"
-            f"- **Storage**: {storage}GB SSD\n"
-            f"- **Category**: {category.title()}\n\n"
-            f"### 💡 Why This Fits Your Needs\n"
-            f"{reasoning_str}"
+            f"I found {len(products)} options that match your requirements.\n\n"
+            f"### {top_name}\n"
+            f"**₹{price:,}**\n"
+            f"{spec_block}\n\n"
+            f"**Why it fits**\n"
+            f"{why_fits}\n\n"
+            f"**Budget**\n"
+            f"{budget_status}"
             f"{alt_section}\n\n"
-            f"### 💰 Budget & Value Summary\n"
-            f"- **Target Budget**: ₹{user_budget:,}\n"
-            f"- **Actual Price**: ₹{price:,}\n"
-            f"- **Difference**: {'+₹' + f'{diff:,}' if diff >= 0 else '-₹' + f'{-diff:,}'} "
-            f"({'Within Budget' if diff >= 0 else 'Over Budget'})\n\n"
-            f"This recommendation delivers the highest overall utility for your specified constraints."
+            f"Would you like me to compare these options?"
         )
 
         msg = AIMessage(content=final_text)
@@ -752,7 +471,6 @@ class OllamaChatModel(BaseChatModel):
         run_manager: Any = None,
         **kwargs: Any,
     ) -> ChatResult:
-        # Prepare Ollama payload
         formatted_messages = []
         for m in messages:
             role = "user" if isinstance(m, HumanMessage) else "assistant" if isinstance(m, AIMessage) else "tool"

@@ -11,7 +11,6 @@ import {
   Plus,
   Settings,
   Terminal,
-  Circle,
 } from 'lucide-react';
 import { SystemStatus } from '../types';
 
@@ -128,42 +127,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Divider */}
-      <div style={styles.divider} />
-
-      {/* System Status Section */}
-      <div style={styles.systemSection}>
-        <div style={styles.sectionHeader}>System</div>
-        <div style={styles.statusRow}>
-          <span style={styles.statusLabel}>Agent</span>
-          <span style={styles.statusValue}>
-            <Circle size={7} fill="#16A34A" color="#16A34A" />
-            {systemStatus?.agent || 'Ready'}
-          </span>
-        </div>
-        <div style={styles.statusRow}>
-          <span style={styles.statusLabel}>Backend</span>
-          <span style={styles.statusValue}>
-            <Circle size={7} fill="#16A34A" color="#16A34A" />
-            {systemStatus?.backend || 'Online'}
-          </span>
-        </div>
-        <div style={styles.statusRow}>
-          <span style={styles.statusLabel}>Database</span>
-          <span style={styles.statusValue}>
-            <Circle
-              size={7}
-              fill={systemStatus?.database?.includes('connected') ? '#16A34A' : '#D97706'}
-              color={systemStatus?.database?.includes('connected') ? '#16A34A' : '#D97706'}
-            />
-            {systemStatus?.database || 'Connected'}
-          </span>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={styles.divider} />
-
       {/* Settings / Footer */}
       <div style={styles.footerSection}>
         <button
@@ -264,34 +227,6 @@ const styles: Record<string, React.CSSProperties> = {
     height: '1px',
     backgroundColor: 'var(--border-color)',
     margin: '0.75rem 0.5rem',
-  },
-  systemSection: {
-    padding: '0.25rem 0.5rem',
-  },
-  sectionHeader: {
-    fontSize: '0.7rem',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: 'var(--text-muted)',
-    marginBottom: '0.5rem',
-  },
-  statusRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    fontSize: '0.78rem',
-    padding: '0.2rem 0',
-  },
-  statusLabel: {
-    color: 'var(--text-secondary)',
-  },
-  statusValue: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.35rem',
-    fontWeight: 500,
-    color: 'var(--text-primary)',
   },
   footerSection: {
     paddingTop: '0.25rem',
