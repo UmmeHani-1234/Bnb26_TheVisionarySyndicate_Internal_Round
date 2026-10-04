@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
   Sparkles,
@@ -15,25 +14,6 @@ import {
 import { api } from '../api';
 import { RunTrace, Product } from '../types';
 import { NavView } from './Sidebar';
-
-/* Framer Motion variants for staggered animations */
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.15 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease: 'easeOut' as const } },
-};
-
-const messageVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.98 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3, ease: 'easeOut' as const } },
-};
 
 interface ChatMessage {
   id: string;
@@ -267,61 +247,38 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
       <div style={styles.messagesContainer}>
         {messages.length === 0 ? (
           /* Empty / Welcome State */
-          <motion.div
-            style={styles.welcomeContainer}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <motion.div
-              style={styles.heroBox}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1, duration: 0.45 }}
-            >
+          <div style={styles.welcomeContainer}>
+            <div style={styles.heroBox}>
               <h1 style={styles.heroTitle}>Black Box</h1>
               <p style={styles.heroSubtitle}>
                 Ask me anything — or shop for electronics and I'll find the best options for you.
               </p>
-            </motion.div>
+            </div>
 
             {/* Prompt Cards Grid */}
-            <motion.div
-              style={styles.promptsGrid}
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-            >
+            <div style={styles.promptsGrid}>
               {samplePrompts.map((p, idx) => (
-                <motion.button
+                <button
                   key={idx}
-                  variants={cardVariants}
-                  whileHover={{ scale: 1.03, borderColor: 'rgba(59, 130, 246, 0.4)', boxShadow: '0 8px 24px rgba(59, 130, 246, 0.12)' }}
-                  whileTap={{ scale: 0.98 }}
                   style={styles.promptCard}
-                  className="glass-card"
                   onClick={() => {
                     handleSend(p.query, p.mode);
                   }}
                 >
                   <div style={styles.promptCardHeader}>
                     <span style={styles.promptCardTitle}>{p.title}</span>
-                    <Sparkles size={14} color="#3B82F6" />
+                    <Sparkles size={14} color="#2563EB" />
                   </div>
                   <div style={styles.promptCardDesc}>{p.desc}</div>
-                </motion.button>
+                </button>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         ) : (
           <div style={styles.chatList}>
-            {messages.map((msg, msgIdx) => (
-              <motion.div
+            {messages.map((msg) => (
+              <div
                 key={msg.id}
-                variants={messageVariants}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: msgIdx < 5 ? msgIdx * 0.05 : 0 }}
                 style={{
                   ...styles.messageRow,
                   justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
@@ -482,26 +439,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             ))}
 
             {/* Live Agent Execution Indicator */}
-            <AnimatePresence>
-              {isLoading && liveStep && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                  transition={{ duration: 0.25 }}
-                  style={{ ...styles.messageRow, justifyContent: 'flex-start' }}
-                >
-                  <div style={styles.liveExecutionBox} className="pulse-glow">
-                    <Loader2 size={16} className="spin-animation" color="#3B82F6" />
-                    <span style={styles.liveStepText}>{liveStep}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {isLoading && liveStep && (
+              <div style={{ ...styles.messageRow, justifyContent: 'flex-start' }}>
+                <div style={styles.liveExecutionBox}>
+                  <Loader2 size={16} className="spin-animation" color="#2563EB" />
+                  <span style={styles.liveStepText}>{liveStep}</span>
+                </div>
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </div>
@@ -544,9 +493,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
             style={styles.textarea}
             disabled={isLoading}
           />
-          <motion.button
-            whileHover={{ scale: 1.08, boxShadow: '0 0 12px rgba(59, 130, 246, 0.4)' }}
-            whileTap={{ scale: 0.92 }}
+          <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || isLoading}
             style={{
@@ -554,8 +501,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
               opacity: !inputText.trim() || isLoading ? 0.5 : 1,
             }}
           >
-            {isLoading ? <Loader2 size={16} className="spin-animation" /> : <Send size={16} />}
-          </motion.button>
+            {isLoading ? <Loader2 size={16} /> : <Send size={16} />}
+          </button>
         </div>
       </div>
     </div>
@@ -594,11 +541,9 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '2.5rem',
   },
   heroTitle: {
-    fontSize: '2.5rem',
+    fontSize: '2.25rem',
     fontWeight: 700,
-    background: 'linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #8B5CF6 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: 'var(--text-primary)',
     letterSpacing: '-0.02em',
     marginBottom: '0.5rem',
   },
@@ -615,15 +560,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   promptCard: {
     textAlign: 'left',
-    padding: '1.1rem 1.25rem',
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '12px',
+    padding: '1rem 1.15rem',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.35rem',
     cursor: 'pointer',
-    backdropFilter: 'blur(12px)',
+    transition: 'border-color 0.15s ease, transform 0.1s ease',
   },
   promptCardHeader: {
     display: 'flex',
@@ -691,20 +636,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.85rem',
   },
   productCard: {
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '10px',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid var(--border-color)',
+    borderRadius: '8px',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-    backdropFilter: 'blur(10px)',
-    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
   },
   productImageWrapper: {
     height: '130px',
-    backgroundColor: 'rgba(30, 41, 59, 0.5)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#F8FAFC',
+    borderBottom: '1px solid var(--border-color)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -773,20 +716,20 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     fontSize: '0.78rem',
     color: 'var(--text-secondary)',
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    backgroundColor: '#F0FDF4',
+    border: '1px solid #DCFCE7',
     padding: '0.45rem 0.75rem',
-    borderRadius: '8px',
+    borderRadius: '6px',
   },
   executionStatusFailed: {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.3rem',
     fontSize: '0.78rem',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    border: '1px solid rgba(239, 68, 68, 0.25)',
+    backgroundColor: '#FEF2F2',
+    border: '1px solid #FECACA',
     padding: '0.65rem 0.85rem',
-    borderRadius: '8px',
+    borderRadius: '6px',
   },
   failedStepNotice: {
     color: '#991B1B',
@@ -799,11 +742,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.3rem',
     fontSize: '0.76rem',
     fontWeight: 600,
-    color: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    border: '1px solid rgba(59, 130, 246, 0.25)',
+    color: '#2563EB',
+    backgroundColor: '#FFFFFF',
+    border: '1px solid #BFDBFE',
     padding: '0.2rem 0.5rem',
-    borderRadius: '6px',
+    borderRadius: '4px',
   },
   diagnoseButton: {
     display: 'flex',
@@ -812,19 +755,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.76rem',
     fontWeight: 600,
     color: '#FFFFFF',
-    background: 'linear-gradient(135deg, #DC2626, #EF4444)',
+    backgroundColor: '#DC2626',
     padding: '0.3rem 0.65rem',
-    borderRadius: '6px',
-    boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
+    borderRadius: '4px',
   },
   inspectButtonSecondary: {
     fontSize: '0.76rem',
     fontWeight: 500,
     color: 'var(--text-secondary)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#FFFFFF',
     border: '1px solid var(--border-color)',
     padding: '0.3rem 0.65rem',
-    borderRadius: '6px',
+    borderRadius: '4px',
   },
   liveExecutionBox: {
     display: 'flex',
@@ -905,12 +847,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '36px',
-    height: '36px',
-    background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+    width: '34px',
+    height: '34px',
+    backgroundColor: 'var(--accent-blue)',
     color: '#FFFFFF',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
   },
 };

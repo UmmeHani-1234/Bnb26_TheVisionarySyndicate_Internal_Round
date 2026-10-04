@@ -1,25 +1,10 @@
-# Secrets
 .env
-.env.production
-
-# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
-
-# IDE
 .idea/
 .vscode/
-
-# Data / artifacts
 events*.json
 *.db
-
-# Frontend build
-frontend/node_modules/
-frontend/dist/
-
-# Docker
-pgdata/

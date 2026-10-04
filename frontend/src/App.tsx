@@ -13,32 +13,6 @@ import { SettingsView } from './components/SettingsView';
 import { api } from './api';
 import { Product, SystemStatus } from './types';
 
-/* Framer Motion page transition variants */
-const pageVariants = {
-  initial: { opacity: 0, y: 12, scale: 0.985, filter: 'blur(4px)' },
-  animate: { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' },
-  exit: { opacity: 0, y: -8, scale: 0.985, filter: 'blur(4px)' },
-};
-
-const pageTransition = {
-  duration: 0.32,
-  ease: 'easeOut' as const,
-};
-
-/* Animated background orb config */
-const orbVariants = {
-  float: {
-    x: [0, 15, -10, 20, 0],
-    y: [0, -20, 10, 15, 0],
-    scale: [1, 1.05, 0.95, 1.02, 1],
-    transition: {
-      duration: 20,
-      ease: 'easeInOut' as const,
-      repeat: Infinity,
-    },
-  },
-};
-
 export function App() {
   const [currentView, setCurrentView] = useState<NavView>('chat');
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -78,57 +52,10 @@ export function App() {
   };
 
   return (
-    <div
-      className="noise-overlay"
-      style={{
-        display: 'flex',
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: 'var(--bg-primary)',
-        position: 'relative',
-      }}
-    >
-      {/* Animated Background Ambient Orbs for Glassmorphism depth */}
-      <motion.div
-        className="bg-orb"
-        variants={orbVariants}
-        animate="float"
-        style={{
-          top: '-120px',
-          left: '8%',
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.5) 0%, transparent 70%)',
-        }}
-      />
-      <motion.div
-        className="bg-orb"
-        custom={1}
-        variants={orbVariants}
-        animate="float"
-        style={{
-          bottom: '-150px',
-          right: '12%',
-          width: '550px',
-          height: '550px',
-          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.5) 0%, transparent 70%)',
-        }}
-      />
-      <motion.div
-        className="bg-orb"
-        custom={2}
-        variants={orbVariants}
-        animate="float"
-        style={{
-          top: '40%',
-          left: '50%',
-          width: '350px',
-          height: '350px',
-          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, transparent 70%)',
-          opacity: 0.08,
-        }}
-      />
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-primary)', position: 'relative' }}>
+      {/* Background Ambient Orbs for Glassmorphism */}
+      <div className="bg-orb glow-blue" style={{ top: '-100px', left: '10%', width: '400px', height: '400px', background: 'radial-gradient(circle, #3B82F6 0%, transparent 70%)' }} />
+      <div className="bg-orb glow-purple" style={{ bottom: '-100px', right: '15%', width: '450px', height: '450px', background: 'radial-gradient(circle, #8B5CF6 0%, transparent 70%)' }} />
 
       {/* Persistent Left Sidebar */}
       <Sidebar
@@ -144,11 +71,10 @@ export function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView === 'chat' ? `chat-${chatSessionKey}` : currentView}
-            variants={pageVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={pageTransition}
+            initial={{ opacity: 0, y: 8, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.99 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             style={{ width: '100%', height: '100%' }}
           >
             {currentView === 'chat' && (
@@ -213,3 +139,4 @@ export function App() {
 }
 
 export default App;
+
