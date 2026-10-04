@@ -88,3 +88,26 @@ class ExecutionStep(Base):
             "latency": self.latency,
             "status": self.status,
         }
+
+
+class ConversationMessage(Base):
+    """Represents a persisted message in a multi-turn conversation session."""
+
+    __tablename__ = "conversation_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    conversation_id = Column(String(64), nullable=False, index=True)
+    role = Column(String(32), nullable=False)  # "system", "user", "assistant"
+    content = Column(Text, nullable=False)
+    timestamp = Column(String(64), default=utc_now_iso, nullable=False)
+    message_metadata = Column(JSON, nullable=True)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "conversation_id": self.conversation_id,
+            "role": self.role,
+            "content": self.content,
+            "timestamp": self.timestamp,
+            "metadata": self.message_metadata,
+        }

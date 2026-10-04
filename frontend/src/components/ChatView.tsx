@@ -35,6 +35,7 @@ interface ChatMessage {
 interface ChatViewProps {
   onNavigateToRun: (runId: string, view: NavView) => void;
   catalogue: Product[];
+  onNewChat?: () => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }) => {
@@ -43,8 +44,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
   const [isLoading, setIsLoading] = useState(false);
   const [failureMode, setFailureMode] = useState<string>('none');
   const [liveStep, setLiveStep] = useState<string | null>(null);
-  // Stable conversation ID for the lifetime of this chat session
-  const conversationId = useRef<string>(`conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+
+  // Stable conversation ID for the lifetime of this chat session, persisted across refreshes
+  const conversationId = useRef<string>(
+    (() => {
+      const stored = sessionStorage.getItem('blackbox_conversation_id');
+      if (stored) return stored;
+      const fresh = `conv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      sessionStorage.setItem('blackbox_conversation_id', fresh);
+      return fresh;
+    })()
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -56,6 +66,31 @@ export const ChatView: React.FC<ChatViewProps> = ({ onNavigateToRun, catalogue }
   useEffect(() => {
     scrollToBottom();
   }, [messages, liveStep]);
+
+  // Restore stored conversation history on refresh / mount
+  useEffect(() => {
+    const convId = conversationId.current;
+    if (convId) {
+      api
+        .getConversationMessages(convId)
+        .then((res) => {
+          if (res.messages && res.messages.length > 0) {
+            const restored: ChatMessage[] = res.messages.map((m) => ({
+              id: `stored-${m.id}`,
+              sender: m.role === 'user' ? 'user' : 'agent',
+              text: m.content,
+              timestamp: m.timestamp
+                ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '',
+            }));
+            setMessages(restored);
+          }
+        })
+        .catch(() => {
+          // Ignore if empty / brand new
+        });
+    }
+  }, []);
 
   /** Build the history array from all previous messages to send with each request */
   const buildHistory = (currentMessages: ChatMessage[]): Array<{ role: string; content: string }> => {

@@ -101,4 +101,14 @@ export const api = {
     }),
 
   getCatalogue: () => request<Product[]>('/catalogue'),
+
+  getConversationMessages: (conversationId: string) =>
+    request<{ conversation_id: string; count: number; messages: Array<{ id: number; role: string; content: string; timestamp: string }> }>(
+      `/conversations/${conversationId}/messages`
+    ),
+
+  clearConversation: (conversationId: string) =>
+    request<{ status: string; message: string }>(`/conversations/${conversationId}`, {
+      method: 'DELETE',
+    }),
 };

@@ -305,10 +305,52 @@ def _message_text(content: Any) -> str:
     return ""
 
 
+def sanitize_response_text(text: str) -> str:
+    """Clean and strip unwanted markdown symbols (*, **, ###, tables, raw JSON, bullet dashes)."""
+    import re
+
+    if not text:
+        return ""
+
+    # Remove raw JSON / code blocks
+    text = re.sub(r"```(?:json)?\s*\{.*?\}\s*```", "", text, flags=re.DOTALL)
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+
+    # Remove markdown headings (e.g. ### Product Name -> Product Name)
+    text = re.sub(r"(?m)^#{1,6}\s*", "", text)
+
+    # Remove markdown table borders and bullet dashes
+    lines = text.split("\n")
+    cleaned_lines = []
+    for line in lines:
+        stripped = line.strip()
+        # Drop table separator lines like |---|---|
+        if re.match(r"^\|[\s\-:|]+\|$", stripped):
+            continue
+        if stripped.startswith("|") and stripped.endswith("|"):
+            parts = [p.strip() for p in stripped.strip("|").split("|")]
+            if len(parts) >= 2:
+                line = " : ".join(parts)
+            else:
+                line = parts[0] if parts else ""
+        # Remove bullet markers at line start: '- ', '* ', '• '
+        line = re.sub(r"^\s*[\-\*•]\s+", "", line)
+        cleaned_lines.append(line)
+    text = "\n".join(cleaned_lines)
+
+    # Remove bold/italic asterisks
+    text = text.replace("**", "")
+    text = text.replace("*", "")
+
+    # Clean multiple consecutive blank lines
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text
+
+
 def _final_text(result: dict) -> str:
     for message in reversed(result.get("messages", [])):
         if isinstance(message, AIMessage) and not message.tool_calls:
-            return _message_text(message.content)
+            return sanitize_response_text(_message_text(message.content))
     return ""
 
 

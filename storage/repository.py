@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from .models import Run, ExecutionStep, utc_now_iso
+from .models import Run, ExecutionStep, ConversationMessage, utc_now_iso
 from .checkpoint_models import Checkpoint
 from .database import SessionLocal, init_db
 
@@ -253,6 +253,99 @@ class TraceRepository:
                 .all()
             )
             return [r.to_dict(include_steps=False) for r in replays]
+        finally:
+            if close_on_finish:
+                session.close()
+
+    # ------------------------------------------------------------------ Conversation Message CRUD
+
+    def save_conversation_message(
+        self,
+        conversation_id: str,
+        role: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> ConversationMessage:
+        """Persists a conversation turn (system, user, or assistant) to storage."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            norm_role = role.lower()
+            if norm_role in ("human", "user"):
+                norm_role = "user"
+            elif norm_role in ("ai", "assistant"):
+                norm_role = "assistant"
+            elif norm_role in ("system",):
+                norm_role = "system"
+
+            msg = ConversationMessage(
+                conversation_id=conversation_id,
+                role=norm_role,
+                content=content,
+                timestamp=utc_now_iso(),
+                message_metadata=metadata,
+            )
+            session.add(msg)
+            session.commit()
+            session.refresh(msg)
+            return msg
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def get_conversation_messages(
+        self,
+        conversation_id: str,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Retrieves ordered conversation history for a given conversation_id."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            query = (
+                session.query(ConversationMessage)
+                .filter(ConversationMessage.conversation_id == conversation_id)
+                .order_by(ConversationMessage.id.asc())
+            )
+            if limit is not None and limit > 0:
+                query = query.limit(limit)
+            messages = query.all()
+            return [m.to_dict() for m in messages]
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def clear_conversation_messages(self, conversation_id: str) -> None:
+        """Clears all stored messages for a specific conversation_id."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            session.query(ConversationMessage).filter(
+                ConversationMessage.conversation_id == conversation_id
+            ).delete()
+            session.commit()
+        finally:
+            if close_on_finish:
+                session.close()
+
+    def list_conversations(self, limit: int = 50, offset: int = 0) -> List[str]:
+        """Returns distinct conversation IDs ordered by recent activity."""
+        session = self._get_session()
+        close_on_finish = self._db is None
+        try:
+            from sqlalchemy import func
+            subq = (
+                session.query(
+                    ConversationMessage.conversation_id,
+                    func.max(ConversationMessage.id).label("max_id"),
+                )
+                .group_by(ConversationMessage.conversation_id)
+                .order_by(func.max(ConversationMessage.id).desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+            return [row[0] for row in subq]
         finally:
             if close_on_finish:
                 session.close()

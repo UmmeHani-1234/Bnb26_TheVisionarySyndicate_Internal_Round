@@ -37,12 +37,16 @@ export function App() {
     setCurrentView(targetView);
   };
 
+  const [chatSessionKey, setChatSessionKey] = useState<number>(Date.now());
+
   const handleSelectReplayRun = (origId: string, altId: string) => {
     setSelectedRunId(origId);
     setAlternativeRunId(altId);
   };
 
   const handleNewChat = () => {
+    sessionStorage.removeItem('blackbox_conversation_id');
+    setChatSessionKey(Date.now());
     setCurrentView('chat');
   };
 
@@ -60,7 +64,12 @@ export function App() {
       {/* Main Content Area */}
       <main style={{ flex: 1, height: '100vh', overflow: 'hidden', position: 'relative' }}>
         {currentView === 'chat' && (
-          <ChatView onNavigateToRun={handleNavigateToRun} catalogue={catalogue} />
+          <ChatView
+            key={chatSessionKey}
+            onNavigateToRun={handleNavigateToRun}
+            catalogue={catalogue}
+            onNewChat={handleNewChat}
+          />
         )}
 
         {currentView === 'runs' && (

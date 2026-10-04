@@ -1,5 +1,6 @@
 """FastAPI backend routes for Trace Storage, Retrieval, Agent Execution, and Stage 5 Replay."""
 
+import logging
 import uuid
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,7 @@ from storage.database import get_db, Session
 from agent.agent import LaptopAgent
 from recorder.recorder import ExecutionRecorder
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -120,12 +122,66 @@ def evaluate_diagnosis_accuracy(repo: TraceRepository = Depends(get_repo)):
     return metrics.to_dict()
 
 
+# --------------------------------------------------------------------------- Conversation & Agent APIs
+
+
+@router.get("/conversations/{conversation_id}/messages")
+def get_conversation_history(conversation_id: str, repo: TraceRepository = Depends(get_repo)):
+    """GET /conversations/{conversation_id}/messages: Returns stored chat history for a session."""
+    messages = repo.get_conversation_messages(conversation_id)
+    return {
+        "conversation_id": conversation_id,
+        "count": len(messages),
+        "messages": messages,
+    }
+
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str, repo: TraceRepository = Depends(get_repo)):
+    """DELETE /conversations/{conversation_id}: Clears conversation history."""
+    repo.clear_conversation_messages(conversation_id)
+    return {"status": "success", "message": f"Conversation '{conversation_id}' cleared."}
+
+
+@router.get("/conversations")
+def list_all_conversations(limit: int = 50, offset: int = 0, repo: TraceRepository = Depends(get_repo)):
+    """GET /conversations: Lists active conversation IDs."""
+    convs = repo.list_conversations(limit=limit, offset=offset)
+    return {"conversations": convs}
+
+
 @router.post("/agent/run")
 def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depends(get_repo)):
-    """Executes the LangChain agent with automatic trace recording and optional failure injection.
+    """Executes the agent with session-based conversation memory, automatic trace recording and optional failure injection.
 
     Stage 5 enhancement: also auto-generates checkpoints after the run completes.
     """
+    conv_id = body.conversation_id or f"conv-{uuid.uuid4().hex[:12]}"
+
+    # 1. Retrieve stored conversation messages for this conversation_id
+    stored_messages = repo.get_conversation_messages(conv_id)
+    if not stored_messages and body.history:
+        # Initialize storage from provided history if storage was empty
+        for item in body.history:
+            if isinstance(item, dict):
+                r = item.get("role", "user")
+                c = item.get("content", "")
+                if c and c.strip():
+                    repo.save_conversation_message(conv_id, role=r, content=c.strip())
+        stored_messages = repo.get_conversation_messages(conv_id)
+
+    # 2. Context debug check (INTERNAL LOGGING ONLY - NEVER shown to user)
+    logger.info(
+        "\n--- [CONTEXT DEBUG CHECK] ---\nconversation_id: %s\nnumber_of_previous_messages: %d\ncurrent_message: %s\n-----------------------------",
+        conv_id,
+        len(stored_messages),
+        body.request,
+    )
+
+    # 3. Store the current user message into conversation history
+    repo.save_conversation_message(conversation_id=conv_id, role="user", content=body.request.strip())
+
+    # 4. Execute the agent with the prior conversation history passed to LLM
     run_id = body.run_id or f"run-{uuid.uuid4().hex[:8]}"
     recorder = ExecutionRecorder(run_id=run_id, repository=repo)
 
@@ -133,9 +189,17 @@ def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depen
     agent_result = agent.run(
         body.request,
         failure_mode=body.failure_mode,
-        history=body.history,
-        conversation_id=body.conversation_id,
+        history=stored_messages,
+        conversation_id=conv_id,
     )
+
+    # 5. Store the assistant's final response into conversation history
+    if agent_result.final_response and agent_result.status == "success":
+        repo.save_conversation_message(
+            conversation_id=conv_id,
+            role="assistant",
+            content=agent_result.final_response.strip(),
+        )
 
     # Auto-create checkpoints for this run (Stage 5)
     trace = repo.get_run_trace(run_id)
@@ -151,15 +215,14 @@ def trigger_agent_execution(body: AgentRunRequest, repo: TraceRepository = Depen
             )
         except Exception as exc:
             # Checkpoint creation must not break the main response
-            import logging
-            logging.getLogger(__name__).warning("Checkpoint creation failed: %s", exc)
+            logger.warning("Checkpoint creation failed: %s", exc)
 
     return {
         "run_id": run_id,
         "status": agent_result.status,
         "final_response": agent_result.final_response,
         "products": agent_result.products,
-        "conversation_id": agent_result.conversation_id,
+        "conversation_id": conv_id,
         "trace": trace,
     }
 

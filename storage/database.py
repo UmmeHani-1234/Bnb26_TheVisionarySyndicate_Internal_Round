@@ -51,8 +51,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db() -> None:
     """Creates database tables if they do not exist and migrates new columns."""
-    # Import checkpoint model to register it with Base.metadata before create_all
-    from storage.checkpoint_models import Checkpoint  # noqa: F401 – side-effect import
+    # Import models to register them with Base.metadata before create_all
+    from storage.models import Run, ExecutionStep, ConversationMessage  # noqa: F401
+    from storage.checkpoint_models import Checkpoint  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

@@ -107,6 +107,11 @@ def _detect_category(text_lower: str) -> str:
 def _is_general_chat(text: str) -> bool:
     """Detect general conversational / informational query rather than explicit product recommendation."""
     text_lower = text.strip().lower()
+    
+    # Check for simple arithmetic like "4 + 10", "What is 4 + 10?", "10 * 5"
+    if re.search(r"^\s*(?:what\s+is\s+)?\d+\s*[\+\-\*\/]\s*\d+\s*\??\s*$", text_lower):
+        return True
+
     greetings = ["hi", "hello", "hey", "good morning", "good evening", "how are you", "who are you", "what can you do", "help"]
     if text_lower in greetings or any(text_lower.startswith(g + " ") or text_lower.startswith(g + "!") for g in greetings):
         if not _extract_budget(text) and not any(w in text_lower for w in ["need", "buy", "find", "suggest", "recommend", "under", "within"]):
@@ -115,7 +120,7 @@ def _is_general_chat(text: str) -> bool:
     general_questions = [
         "what is refresh rate", "what is oled", "oled vs ips", "how much ram",
         "difference between intel and amd", "what is anc", "how does noise cancellation work",
-        "what is an ssd", "why is 16gb ram better", "explain 4k vs 2k"
+        "what is an ssd", "why is 16gb ram better", "explain 4k vs 2k", "explain recursion"
     ]
     if any(q in text_lower for q in general_questions):
         return True
@@ -128,8 +133,26 @@ def _is_general_chat(text: str) -> bool:
 
 
 def _answer_general_chat(text: str) -> str:
-    """Provide a knowledgeable, friendly, concise technical answer as an electronics consultant."""
-    text_lower = text.lower()
+    """Provide a knowledgeable, friendly, concise answer without markdown asterisks or bullet dashes."""
+    text_clean = text.strip()
+    text_lower = text_clean.lower()
+
+    # Simple math handling: "4 + 10", "what is 4 + 10?"
+    math_match = re.search(r"(\d+)\s*([\+\-\*\/])\s*(\d+)", text_clean)
+    if math_match:
+        a = int(math_match.group(1))
+        op = math_match.group(2)
+        b = int(math_match.group(3))
+        if op == "+":
+            ans = a + b
+        elif op == "-":
+            ans = a - b
+        elif op == "*":
+            ans = a * b
+        elif op == "/":
+            ans = a // b if b != 0 else 0
+        return f"{a} {op} {b} is {ans}."
+
     if any(w in text_lower for w in ["hi", "hello", "hey", "who are you", "what can you do"]):
         return (
             "Hello! I am your AI Electronics Product Consultant. I can help you find, compare, and verify "
@@ -138,45 +161,69 @@ def _answer_general_chat(text: str) -> str:
         )
     if "refresh rate" in text_lower or "hz" in text_lower:
         return (
-            "**Display Refresh Rate (Hz)** refers to how many times per second the screen updates its image. "
-            "A standard display operates at **60Hz**, while gaming and high-fluidity monitors/phones run at "
-            "**120Hz, 144Hz, or 240Hz**. Higher refresh rates deliver significantly smoother motion, reduced eye fatigue, "
+            "Display Refresh Rate (Hz) refers to how many times per second the screen updates its image. "
+            "A standard display operates at 60Hz, while gaming and high-fluidity displays run at "
+            "120Hz, 144Hz, or 240Hz. Higher refresh rates deliver smoother motion, reduced eye fatigue, "
             "and faster reaction times in games and UI navigation."
         )
     if "oled vs ips" in text_lower or "oled" in text_lower:
         return (
-            "**OLED vs. IPS Panels:**\n\n"
-            "- **OLED (Organic LED)**: Each individual pixel emits its own light, delivering true absolute blacks, infinite contrast, and instant response times (<0.1ms). Perfect for cinematic media and dark-room gaming.\n"
-            "- **IPS (In-Plane Switching)**: Uses an LED backlight. It provides exceptional color accuracy and wide viewing angles at a more accessible price point, making it ideal for office productivity and graphic design."
+            "OLED vs IPS Panels:\n\n"
+            "OLED (Organic LED): Each individual pixel emits its own light, delivering true absolute blacks, infinite contrast, and instant response times. Perfect for cinematic media and dark-room gaming.\n\n"
+            "IPS (In-Plane Switching): Uses an LED backlight. It provides exceptional color accuracy and wide viewing angles at a more accessible price point, making it ideal for office productivity and graphic design."
         )
     if "ram" in text_lower:
         return (
-            "**RAM Guidelines:**\n\n"
-            "- **8GB**: Suitable for everyday web browsing, office documents, and light multitasking.\n"
-            "- **16GB**: The sweet spot for modern software development, heavy browser tabs, and gaming.\n"
-            "- **32GB+**: Recommended for heavy video rendering, local machine learning models, and complex virtualization."
+            "RAM Guidelines:\n\n"
+            "8GB: Suitable for everyday web browsing, office documents, and light multitasking.\n\n"
+            "16GB: The sweet spot for modern software development, heavy browser tabs, and gaming.\n\n"
+            "32GB+: Recommended for heavy video rendering, local machine learning models, and complex virtualization."
+        )
+    if "recursion" in text_lower:
+        return (
+            "Recursion is a programming technique where a function calls itself to solve a smaller instance of the same problem, stopping when it reaches a base condition."
         )
     return (
-        f"As an electronics consultant, I can certainly assist with that! For {text.strip()}, our catalogue "
-        "contains options tailored to productivity, gaming, and creative workflows. Would you like me to recommend "
-        "specific products within a target budget?"
+        f"For {text_clean}, our catalogue contains options tailored to productivity, gaming, and creative workflows. "
+        "Would you like me to recommend specific products within a target budget?"
     )
 
 
 def _parse_query_intent(user_text: str, history_texts: Optional[List[str]] = None) -> dict[str, Any]:
     """Extract structured intent and criteria from user text and multi-turn conversation context."""
-    full_context = " ".join((history_texts or []) + [user_text])
     text_lower = user_text.lower()
+    full_context = " ".join((history_texts or []) + [user_text])
     context_lower = full_context.lower()
 
-    budget = _extract_budget(user_text) or _extract_budget(full_context)
-    min_ram = _extract_ram(user_text) or _extract_ram(full_context)
-    min_storage = _extract_storage(user_text) or _extract_storage(full_context)
-    brand = _extract_brand(user_text) or _extract_brand(full_context)
+    budget = _extract_budget(user_text)
+    if budget is None and history_texts:
+        budget = _extract_budget(full_context)
 
-    category = _detect_category(text_lower)
-    if category == "laptop" and history_texts:
+    if "cheaper" in text_lower or "less expensive" in text_lower:
+        if budget:
+            budget = int(budget * 0.8)
+        else:
+            budget = 50000
+
+    min_ram = _extract_ram(user_text)
+    if min_ram is None and history_texts:
+        min_ram = _extract_ram(full_context)
+
+    min_storage = _extract_storage(user_text)
+    if min_storage is None and history_texts:
+        min_storage = _extract_storage(full_context)
+
+    brand = _extract_brand(user_text)
+    if brand is None and history_texts:
+        brand = _extract_brand(full_context)
+
+    user_cat = _detect_category(text_lower)
+    if any(w in text_lower for w in ["phone", "mobile", "smartphone", "tv", "monitor", "headphone", "earbud", "camera", "watch", "tablet", "speaker", "router", "laptop"]):
+        category = user_cat
+    elif history_texts:
         category = _detect_category(context_lower)
+    else:
+        category = user_cat
 
     needs_gaming = any(w in context_lower for w in ["game", "gaming", "gamer", "gpu", "graphics", "rtx", "gtx", "dedicated", "240hz", "144hz"])
     needs_prog = any(w in context_lower for w in ["programming", "coding", "developer", "development", "software", "code", "python", "java", "engineer"])
@@ -184,6 +231,12 @@ def _parse_query_intent(user_text: str, history_texts: Optional[List[str]] = Non
     needs_portable = any(w in context_lower for w in ["portable", "lightweight", "slim", "battery", "travel", "ultrabook", "anc", "noise cancel"])
 
     is_general = _is_general_chat(user_text)
+
+    target_index = 0
+    if "second" in text_lower or "2nd" in text_lower:
+        target_index = 1
+    elif "third" in text_lower or "3rd" in text_lower:
+        target_index = 2
 
     return {
         "budget": budget,
@@ -198,6 +251,7 @@ def _parse_query_intent(user_text: str, history_texts: Optional[List[str]] = Non
         "needs_portable": needs_portable,
         "is_general_chat": is_general,
         "raw_text": user_text,
+        "target_index": target_index,
     }
 
 
@@ -312,9 +366,11 @@ class LocalChatModel(BaseChatModel):
             )
             return ChatResult(generations=[ChatGeneration(message=msg)])
 
-        top_prod = products[0]
+        target_idx = intent.get("target_index", 0)
+        top_idx = target_idx if target_idx < len(products) else 0
+        top_prod = products[top_idx]
         top_name = top_prod.get("name", "Product")
-        runner_up = products[1] if len(products) > 1 else None
+        runner_up = products[0] if top_idx != 0 else (products[1] if len(products) > 1 else None)
 
         # Stage 3: Call check_specifications for top candidate
         if "check_specifications" not in executed_tool_names:
@@ -390,25 +446,25 @@ class LocalChatModel(BaseChatModel):
 
         spec_lines = []
         if "processor" in top_prod or "processor" in specs:
-            spec_lines.append(f"- Processor: {top_prod.get('processor') or specs.get('processor')}")
+            spec_lines.append(f"Processor: {top_prod.get('processor') or specs.get('processor')}")
         if "ram_gb" in top_prod or "ram_gb" in specs or "ram" in specs:
-            spec_lines.append(f"- RAM: {top_prod.get('ram_gb') or specs.get('ram_gb') or specs.get('ram')}GB")
+            spec_lines.append(f"RAM: {top_prod.get('ram_gb') or specs.get('ram_gb') or specs.get('ram')}GB")
         if "storage_gb" in top_prod or "storage_gb" in specs or "storage" in specs:
-            spec_lines.append(f"- Storage: {top_prod.get('storage_gb') or specs.get('storage_gb') or specs.get('storage')}GB")
+            spec_lines.append(f"Storage: {top_prod.get('storage_gb') or specs.get('storage_gb') or specs.get('storage')}GB")
         if "screen_size" in specs:
-            spec_lines.append(f"- Display: {specs.get('screen_size')}\" {specs.get('resolution', '')} ({specs.get('panel_type', '')})")
+            spec_lines.append(f"Display: {specs.get('screen_size')}\" {specs.get('resolution', '')} ({specs.get('panel_type', '')})")
         elif "display" in specs:
-            spec_lines.append(f"- Display: {specs.get('display')}")
+            spec_lines.append(f"Display: {specs.get('display')}")
         if "gpu" in top_prod or "gpu" in specs:
-            spec_lines.append(f"- Graphics: {top_prod.get('gpu') or specs.get('gpu')}")
+            spec_lines.append(f"Graphics: {top_prod.get('gpu') or specs.get('gpu')}")
         if "noise_cancellation" in specs:
-            spec_lines.append(f"- Active Noise Cancellation: {'Yes (Industry Leading)' if specs.get('noise_cancellation') else 'No'}")
+            spec_lines.append(f"Active Noise Cancellation: {'Yes' if specs.get('noise_cancellation') else 'No'}")
         if "camera" in specs:
-            spec_lines.append(f"- Camera: {specs.get('camera')}")
+            spec_lines.append(f"Camera: {specs.get('camera')}")
         if "battery_mah" in specs:
-            spec_lines.append(f"- Battery: {specs.get('battery_mah')} mAh")
+            spec_lines.append(f"Battery: {specs.get('battery_mah')} mAh")
 
-        spec_block = "\n".join(spec_lines) if spec_lines else f"- Category: {category.title()}\n- Model: {top_name}"
+        spec_block = "\n".join(spec_lines) if spec_lines else f"Category: {category.title()}\nModel: {top_name}"
 
         # Rationale
         if intent["needs_programming"] and category in ("laptop", "ultrabook", "gaming"):
@@ -423,28 +479,40 @@ class LocalChatModel(BaseChatModel):
         else:
             why_fits = f"Provides the best performance-to-price balance available in our {category} catalogue."
 
-        alt_section = ""
-        if runner_up and mode not in ("budget_violation", "wrong_interpretation"):
+        user_text_lower = user_text.lower()
+        # Direct follow-up Q&A checks
+        if "how much ram" in user_text_lower and ("it" in user_text_lower or "this" in user_text_lower or "second" in user_text_lower):
+            ram_val = top_prod.get("ram_gb") or specs.get("ram_gb") or specs.get("ram") or 16
+            final_text = f"The {top_name} comes with {ram_val}GB RAM."
+        elif "good for gaming" in user_text_lower and ("it" in user_text_lower or "this" in user_text_lower or "second" in user_text_lower):
+            gpu_val = top_prod.get("gpu") or specs.get("gpu") or "dedicated graphics"
+            final_text = f"Yes, the {top_name} features {gpu_val} and is well-suited for gaming."
+        elif "compare" in user_text_lower and runner_up:
             r_name = runner_up.get("name")
             r_price = int(runner_up.get("price", 0))
-            alt_section = (
-                f"\n\n### 🔄 Alternative Option to Consider\n"
-                f"- **{r_name}** at **₹{r_price:,}**\n"
-                f"  - *Comparison:* A solid alternative if you wish to balance features or adjust your spend."
+            final_text = (
+                f"Comparison between {top_name} and {r_name}:\n\n"
+                f"{top_name}\n"
+                f"Price: ₹{price:,}\n"
+                f"{spec_block}\n\n"
+                f"{r_name}\n"
+                f"Price: ₹{r_price:,}\n"
+                f"Category: {category.title()}\n\n"
+                f"Why it fits:\n"
+                f"{why_fits}\n\n"
+                f"Budget: {budget_status}"
             )
-
-        final_text = (
-            f"I found {len(products)} options that match your requirements.\n\n"
-            f"### {top_name}\n"
-            f"**₹{price:,}**\n"
-            f"{spec_block}\n\n"
-            f"**Why it fits**\n"
-            f"{why_fits}\n\n"
-            f"**Budget**\n"
-            f"{budget_status}"
-            f"{alt_section}\n\n"
-            f"Would you like me to compare these options?"
-        )
+        else:
+            final_text = (
+                f"I found a few options that match your requirements.\n\n"
+                f"{top_name}\n"
+                f"Price: ₹{price:,}\n\n"
+                f"Key specifications:\n"
+                f"{spec_block}\n\n"
+                f"Why it fits:\n"
+                f"{why_fits}\n\n"
+                f"Budget: {budget_status}"
+            )
 
         msg = AIMessage(content=final_text)
         return ChatResult(generations=[ChatGeneration(message=msg)])
