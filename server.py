@@ -19,9 +19,13 @@ app = FastAPI(
     version="0.3.0",
 )
 
+# Configure allowed CORS origins from environment variable or allow all
+cors_env = os.getenv("CORS_ORIGINS") or os.getenv("ALLOWED_ORIGINS")
+allowed_origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()] if cors_env else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,7 +49,24 @@ def serve_viewer():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "phase": 3, "service": "Black Box Trace API"}
+    """Health check endpoint verifying DB connection and API status."""
+    from storage.database import engine
+    from sqlalchemy import text
+
+    db_status = "healthy"
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        db_status = f"unhealthy: {exc}"
+
+    return {
+        "status": "ok" if db_status == "healthy" else "degraded",
+        "phase": 3,
+        "service": "Black Box Trace API",
+        "database": db_status,
+        "environment": os.getenv("ENV", "production"),
+    }
 
 
 if __name__ == "__main__":

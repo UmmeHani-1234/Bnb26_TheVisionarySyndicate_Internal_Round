@@ -18,8 +18,10 @@ def get_database_url() -> str:
     url = os.getenv("DATABASE_URL")
     if not url:
         return "sqlite:///traces.db"
-    # Ensure psycopg 3 driver for PostgreSQL if plain postgresql:// is provided
-    if url.startswith("postgresql://"):
+    # Ensure psycopg 3 driver for PostgreSQL if plain postgresql:// or postgres:// is provided
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
         url = url.replace("postgresql://", "postgresql+psycopg://", 1)
     return url
 

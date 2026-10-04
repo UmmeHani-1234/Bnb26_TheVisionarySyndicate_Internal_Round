@@ -1,43 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-primary: #FFFFFF;
-  --bg-secondary: #F8FAFC;
-  --bg-tertiary: #F1F5F9;
-  --bg-active: #E2E8F0;
-  
-  --border-light: #F1F5F9;
-  --border-color: #E2E8F0;
-  --border-subtle: #CBD5E1;
-  --border-focus: #2563EB;
+  --bg-primary: #0B1120;
+  --bg-secondary: rgba(15, 23, 42, 0.75);
+  --bg-tertiary: rgba(30, 41, 59, 0.6);
+  --bg-active: rgba(59, 130, 246, 0.15);
 
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(59, 130, 246, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-backdrop: blur(18px) saturate(180%);
+
+  --border-light: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.15);
+  --border-focus: #3B82F6;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
   --text-muted: #64748B;
-  --text-disabled: #94A3B8;
+  --text-disabled: #475569;
 
-  --accent-blue: #2563EB;
-  --accent-blue-hover: #1D4ED8;
-  --accent-blue-light: #EFF6FF;
+  --accent-blue: #3B82F6;
+  --accent-blue-hover: #2563EB;
+  --accent-blue-light: rgba(59, 130, 246, 0.15);
+  --accent-cyan: #06B6D4;
+  --accent-purple: #8B5CF6;
+  --accent-pink: #EC4899;
 
-  --status-success: #16A34A;
-  --status-success-bg: #F0FDF4;
-  --status-success-border: #BBF7D0;
+  --status-success: #22C55E;
+  --status-success-bg: rgba(34, 197, 94, 0.15);
+  --status-success-border: rgba(34, 197, 94, 0.3);
 
-  --status-error: #DC2626;
-  --status-error-bg: #FEF2F2;
-  --status-error-border: #FECACA;
+  --status-error: #EF4444;
+  --status-error-bg: rgba(239, 68, 68, 0.15);
+  --status-error-border: rgba(239, 68, 68, 0.3);
 
-  --status-warning: #D97706;
-  --status-warning-bg: #FFFBEB;
-  --status-warning-border: #FDE68A;
+  --status-warning: #F59E0B;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-warning-border: rgba(245, 158, 11, 0.3);
 
-  --status-replay: #7C3AED;
-  --status-replay-bg: #F5F3FF;
-  --status-replay-border: #DDD6FE;
+  --status-replay: #A855F7;
+  --status-replay-bg: rgba(168, 85, 247, 0.15);
+  --status-replay-border: rgba(168, 85, 247, 0.3);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Glassmorphism gradient accents */
+  --gradient-blue-purple: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+  --gradient-cyan-blue: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
 }
 
 * {
@@ -62,7 +76,7 @@ body {
   display: flex;
 }
 
-/* Scrollbar styles */
+/* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -73,22 +87,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: rgba(148, 163, 184, 0.5);
 }
 
-/* Button & interactive resets */
+/* ─── Button & interactive resets ─── */
 button {
   font-family: inherit;
   border: none;
   background: none;
   cursor: pointer;
   outline: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 input, textarea, select {
@@ -97,7 +111,7 @@ input, textarea, select {
   font-size: 0.9rem;
 }
 
-/* Badges */
+/* ─── Badges ─── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -136,7 +150,7 @@ input, textarea, select {
 .badge-blue {
   background-color: var(--accent-blue-light);
   color: var(--accent-blue);
-  border: 1px solid #BFDBFE;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .badge-neutral {
@@ -145,7 +159,7 @@ input, textarea, select {
   border: 1px solid var(--border-color);
 }
 
-/* Monospace code snippet */
+/* ─── Monospace code snippet ─── */
 code, pre {
   font-family: var(--font-mono);
 }
@@ -158,4 +172,171 @@ code, pre {
   border: 1px solid var(--border-color);
   border-radius: 4px;
   color: var(--text-secondary);
+}
+
+/* ─── Glassmorphism panel styles ─── */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 20px rgba(59, 130, 246, 0.12);
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+/* ─── Glow Effects ─── */
+.glow-blue {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.25), 0 0 60px rgba(59, 130, 246, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.25), 0 0 60px rgba(139, 92, 246, 0.1);
+}
+
+/* ─── Background Ambient Orbs ─── */
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.12;
+  z-index: 0;
+  animation: orbFloat 20s ease-in-out infinite;
+}
+
+/* ─── Keyframe Animations ─── */
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(15px, -20px) scale(1.05); }
+  50% { transform: translate(-10px, 10px) scale(0.95); }
+  75% { transform: translate(20px, 15px) scale(1.02); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* ─── Gradient border on hover ─── */
+.gradient-border-hover {
+  position: relative;
+}
+
+.gradient-border-hover::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--gradient-blue-purple);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border-hover:hover::after {
+  opacity: 0.15;
+}
+
+/* ─── Noise texture overlay (subtle) ─── */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }

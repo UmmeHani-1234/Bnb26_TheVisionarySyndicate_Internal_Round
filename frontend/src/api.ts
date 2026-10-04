@@ -10,7 +10,7 @@ import {
   AgentRunResponse,
 } from './types';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:8000';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
